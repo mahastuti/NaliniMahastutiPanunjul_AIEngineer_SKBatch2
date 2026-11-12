@@ -1,0 +1,57 @@
+{
+  "_comment": "fixtures that simulate raw llm responses with KNOWN defects, to measure schema validation and grounding containment. these are not real gemini outputs; they test this system's defenses, not the model.",
+  "cv_text": "Budi Uji\nEXPERIENCE\nData Analyst - PT Uji Coba | Jan 2020 - Jan 2023\n- Built dashboards in Tableau for finance.\nEDUCATION\nBachelor of Economics - Universitas Uji | 2016 - 2020\nSKILLS\nPython, SQL, Tableau",
+  "fixtures": [
+    {
+      "name": "faithful_output",
+      "llm_output": "{\"full_name\": \"Budi Uji\", \"education\": [{\"institution\": \"Universitas Uji\", \"degree\": \"Bachelor of Economics\", \"degree_level\": \"bachelor\", \"field_of_study\": \"Economics\", \"start_date\": \"2016\", \"end_date\": \"2020\", \"in_progress\": false, \"evidence\": [\"Bachelor of Economics - Universitas Uji | 2016 - 2020\"]}], \"work_experience\": [{\"company\": \"PT Uji Coba\", \"title\": \"Data Analyst\", \"start_date\": \"2020-01\", \"end_date\": \"2023-01\", \"is_current\": false, \"responsibilities\": [\"Built dashboards in Tableau for finance.\"], \"technologies\": [\"Tableau\"], \"evidence\": [\"Data Analyst - PT Uji Coba | Jan 2020 - Jan 2023\"]}], \"skills\": [{\"name\": \"Python\", \"evidence\": [\"Python, SQL, Tableau\"]}, {\"name\": \"SQL\", \"evidence\": [\"Python, SQL, Tableau\"]}, {\"name\": \"Tableau\", \"evidence\": [\"Python, SQL, Tableau\"]}], \"projects\": [], \"certifications\": []}",
+      "expect_schema_valid": true,
+      "items": [
+        {"section": "education", "key": "Universitas Uji", "fabricated": false},
+        {"section": "work_experience", "key": "PT Uji Coba", "fabricated": false},
+        {"section": "skills", "key": "Python", "fabricated": false},
+        {"section": "skills", "key": "SQL", "fabricated": false},
+        {"section": "skills", "key": "Tableau", "fabricated": false}
+      ]
+    },
+    {
+      "name": "hallucinated_items",
+      "llm_output": "{\"full_name\": \"Budi Uji\", \"education\": [{\"institution\": \"Universitas Uji\", \"degree\": \"Bachelor of Economics\", \"degree_level\": \"bachelor\", \"field_of_study\": \"Economics\", \"start_date\": \"2016\", \"end_date\": \"2020\", \"in_progress\": false, \"evidence\": [\"Bachelor of Economics - Universitas Uji | 2016 - 2020\"]}], \"work_experience\": [{\"company\": \"PT Uji Coba\", \"title\": \"Data Analyst\", \"start_date\": \"2020-01\", \"end_date\": \"2023-01\", \"is_current\": false, \"responsibilities\": [], \"technologies\": [\"Tableau\"], \"evidence\": [\"Data Analyst - PT Uji Coba | Jan 2020 - Jan 2023\"]}], \"skills\": [{\"name\": \"Python\", \"evidence\": [\"Python, SQL, Tableau\"]}, {\"name\": \"Kubernetes\", \"evidence\": [\"Deployed microservices on Kubernetes clusters\"]}, {\"name\": \"Spark\", \"evidence\": []}], \"projects\": [], \"certifications\": [{\"name\": \"AWS Solutions Architect\", \"issuer\": \"Amazon\", \"date\": \"2022\", \"evidence\": [\"AWS Solutions Architect certification earned 2022\"]}]}",
+      "expect_schema_valid": true,
+      "items": [
+        {"section": "education", "key": "Universitas Uji", "fabricated": false},
+        {"section": "work_experience", "key": "PT Uji Coba", "fabricated": false},
+        {"section": "skills", "key": "Python", "fabricated": false},
+        {"section": "skills", "key": "Kubernetes", "fabricated": true},
+        {"section": "skills", "key": "Spark", "fabricated": true},
+        {"section": "certifications", "key": "AWS Solutions Architect", "fabricated": true}
+      ]
+    },
+    {
+      "name": "paraphrased_evidence_and_wrong_name",
+      "llm_output": "{\"full_name\": \"Budi Setiawan\", \"education\": [], \"work_experience\": [{\"company\": \"PT Uji Coba\", \"title\": \"Data Analyst\", \"start_date\": \"2020-01\", \"end_date\": \"2023-01\", \"is_current\": false, \"responsibilities\": [], \"technologies\": [], \"evidence\": [\"He worked as an analyst at a testing company for three years\"]}], \"skills\": [{\"name\": \"Tableau\", \"evidence\": [\"Python, SQL, Tableau\"]}], \"projects\": [], \"certifications\": []}",
+      "expect_schema_valid": true,
+      "items": [
+        {"section": "work_experience", "key": "PT Uji Coba", "fabricated": true},
+        {"section": "skills", "key": "Tableau", "fabricated": false}
+      ],
+      "_note": "the role is real but its evidence is paraphrased, so the grounding layer must drop it: unverifiable counts as unsupported. the wrong full_name must also be dropped."
+    },
+    {
+      "name": "malformed_json",
+      "llm_output": "Sure! Here is the extracted profile: {\"full_name\": \"Budi Uji\", \"skills\": [",
+      "expect_schema_valid": false
+    },
+    {
+      "name": "protected_attribute_smuggled",
+      "llm_output": "{\"full_name\": \"Budi Uji\", \"age\": 29, \"gender\": \"male\", \"education\": [], \"work_experience\": [], \"skills\": [], \"projects\": [], \"certifications\": []}",
+      "expect_schema_valid": false,
+      "_note": "extra fields are forbidden by the schema, so age/gender must cause rejection."
+    },
+    {
+      "name": "wrong_types",
+      "llm_output": "{\"full_name\": \"Budi Uji\", \"education\": [], \"work_experience\": [{\"company\": \"PT Uji Coba\", \"title\": \"Data Analyst\", \"start_date\": \"January 2020\", \"end_date\": \"2023-01\", \"is_current\": \"no\", \"responsibilities\": [], \"technologies\": [], \"evidence\": [\"Data Analyst - PT Uji Coba | Jan 2020 - Jan 2023\"]}], \"skills\": \"Python, SQL\", \"projects\": [], \"certifications\": []}",
+      "expect_schema_valid": false
+    }
+  ]
+}

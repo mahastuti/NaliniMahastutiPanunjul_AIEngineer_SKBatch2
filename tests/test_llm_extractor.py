@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 from google.genai import errors as genai_errors
 
-from src import llm_extractor
+from src import gemini_client
 from src.llm_extractor import ExtractionError, extract_profile, ground_profile
 from src.pdf_parser import extract_text
 from src.schemas import CandidateProfile, Skill
@@ -38,7 +38,7 @@ def _profile_json(**over):
 
 @pytest.fixture(autouse=True)
 def no_sleep(monkeypatch):
-    monkeypatch.setattr(llm_extractor, "RETRY_DELAY_S", 0)
+    monkeypatch.setattr(gemini_client, "RETRY_DELAY_S", 0)
 
 
 def test_mock_mode_is_labelled(sample_pdf):
@@ -126,6 +126,15 @@ def test_client_error_is_not_retried():
     with pytest.raises(ExtractionError) as exc:
         extract_profile(CV, mode="live", client=client)
     assert exc.value.code == "api_error" and len(client.calls) == 1
+
+
+def test_api_error_message_is_visible_for_diagnosis():
+    err = genai_errors.ClientError(400, {"error": {"message": "API key not valid.", "status": "INVALID_ARGUMENT"}})
+    client = FakeClient([err])
+    with pytest.raises(ExtractionError) as exc:
+        extract_profile(CV, mode="live", client=client)
+    assert "http 400" in exc.value.message and "INVALID_ARGUMENT" in exc.value.message
+    assert "API key not valid" in exc.value.message
 
 
 def test_server_error_is_retried_then_succeeds():

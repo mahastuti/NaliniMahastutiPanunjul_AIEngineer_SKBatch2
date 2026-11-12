@@ -162,6 +162,35 @@ class Recommendation(_Strict):
     )
 
 
+# ---------------------------------------------------------------- narrative (llm explanation)
+# written by the recommendation prompt. it EXPLAINS the deterministic result above and is
+# verified against it programmatically; it can never change a status.
+
+
+class RequirementExplanation(_Strict):
+    requirement_id: str
+    status_restated: RequirementStatus
+    explanation: str
+    evidence_quotes: list[str]
+
+
+class NarrativeReport(_Strict):
+    candidate_summary: str
+    confirmed_strengths: list[str]
+    requirement_explanations: list[RequirementExplanation]
+    potential_gaps: list[str]
+    uncertainties: list[str]
+    reviewer_questions: list[str]
+
+
+class NarrativeResult(_Strict):
+    report: NarrativeReport
+    mode: Mode
+    model: str | None
+    prompt_version: str
+    violations: list[str]  # prompt rules the model broke, caught by programmatic checks
+
+
 # ---------------------------------------------------------------- pipeline
 
 
@@ -169,6 +198,7 @@ class ExtractionResult(_Strict):
     profile: CandidateProfile
     mode: Mode
     model: str | None
+    prompt_version: str | None
     grounding_issues: list[str]
     warnings: list[str]
 
@@ -176,6 +206,10 @@ class ExtractionResult(_Strict):
 class Provenance(_Strict):
     profile_source: Literal["gemini_llm", "mock_canned"]
     model: str | None
+    extraction_prompt_version: str | None = None
+    narrative_source: Literal["gemini_llm", "mock_canned"] | None = None
+    recommendation_prompt_version: str | None = None
+    matching_source: Literal["deterministic_rules"] = "deterministic_rules"
     grounded_in_cv_text: Literal[True] = True
     human_verified: Literal[False] = False
 
@@ -186,4 +220,5 @@ class ScreeningResult(_Strict):
     job: JobDescription
     profile: CandidateProfile
     recommendation: Recommendation
+    narrative: NarrativeReport | None = None
     notices: list[str]

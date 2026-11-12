@@ -1,0 +1,246 @@
+{
+  "mode": "mock",
+  "eval_date_fixed": "2026-11-12",
+  "prompt_versions": {
+    "extraction-v1": {
+      "purpose": "extract structured candidate information from raw cv text",
+      "input_variables": [
+        "cv_text",
+        "validation_feedback"
+      ],
+      "temperature": 0.0,
+      "schema": "CandidateProfile"
+    },
+    "recommendation-v1": {
+      "purpose": "explain deterministic matching results as an evidence-based narrative",
+      "input_variables": [
+        "candidate_json",
+        "requirements_json",
+        "matching_json",
+        "validation_feedback"
+      ],
+      "temperature": 0.0,
+      "schema": "NarrativeReport"
+    }
+  },
+  "a_prompt_construction": {
+    "checks": [
+      {
+        "check": "extraction: cv rendered into the user prompt",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "extraction: exactly one data block",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "extraction: injection probes stay inside the data block",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "extraction: system prompt forbids inventing facts",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "extraction: system prompt forbids protected attributes",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "extraction: validation feedback is injected on retry",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "extraction: no unsubstituted placeholder",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "recommendation: exactly one candidate_json block",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "recommendation: exactly one requirements_json block",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "recommendation: exactly one matching_json block",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "recommendation: matching results are passed in",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "recommendation: system prompt forbids changing a status",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "recommendation: system prompt forbids scores and decisions",
+        "passed": true,
+        "detail": ""
+      },
+      {
+        "check": "recommendation: untrusted json cannot close its block",
+        "passed": true,
+        "detail": ""
+      }
+    ],
+    "passed": "14/14",
+    "all_passed": true
+  },
+  "b_extraction_contract": {
+    "fixtures": [
+      {
+        "fixture": "faithful_output",
+        "schema_valid": true,
+        "as_expected": true,
+        "grounding_issues_reported": 0
+      },
+      {
+        "fixture": "hallucinated_items",
+        "schema_valid": true,
+        "as_expected": true,
+        "grounding_issues_reported": 3
+      },
+      {
+        "fixture": "paraphrased_evidence_and_wrong_name",
+        "schema_valid": true,
+        "as_expected": true,
+        "grounding_issues_reported": 2
+      },
+      {
+        "fixture": "malformed_json",
+        "schema_valid": false,
+        "as_expected": true
+      },
+      {
+        "fixture": "protected_attribute_smuggled",
+        "schema_valid": false,
+        "as_expected": true
+      },
+      {
+        "fixture": "wrong_types",
+        "schema_valid": false,
+        "as_expected": true
+      }
+    ],
+    "schema_decisions_correct": "6/6",
+    "unsupported_claims_blocked": "4/4",
+    "unsupported_claim_block_rate": 1.0,
+    "genuine_items_retained": "9/9"
+  },
+  "c_recommendation_contract": {
+    "fixtures": [
+      {
+        "fixture": "compliant_narrative",
+        "violations_reported": 0,
+        "planted_checks": [],
+        "status_integrity_preserved": true
+      },
+      {
+        "fixture": "status_tampering",
+        "violations_reported": 2,
+        "planted_checks": [
+          {
+            "planted": "status_changed",
+            "detected": true
+          },
+          {
+            "planted": "status_changed",
+            "detected": true
+          }
+        ],
+        "status_integrity_preserved": true
+      },
+      {
+        "fixture": "fabricated_evidence",
+        "violations_reported": 2,
+        "planted_checks": [
+          {
+            "planted": "unverifiable_quote",
+            "detected": true
+          },
+          {
+            "planted": "unverifiable_quote",
+            "detected": true
+          }
+        ],
+        "status_integrity_preserved": true
+      },
+      {
+        "fixture": "score_and_hiring_decision",
+        "violations_reported": 3,
+        "planted_checks": [
+          {
+            "planted": "banned_summary",
+            "detected": true
+          },
+          {
+            "planted": "banned_list_item",
+            "detected": true
+          },
+          {
+            "planted": "banned_explanation",
+            "detected": true
+          }
+        ],
+        "status_integrity_preserved": true
+      },
+      {
+        "fixture": "unknown_presented_as_weakness",
+        "violations_reported": 1,
+        "planted_checks": [
+          {
+            "planted": "gap_from_unknown",
+            "detected": true
+          },
+          {
+            "planted": "gap_from_unknown",
+            "detected": true
+          }
+        ],
+        "status_integrity_preserved": true
+      },
+      {
+        "fixture": "invented_and_missing_requirements",
+        "violations_reported": 2,
+        "planted_checks": [
+          {
+            "planted": "invented_requirement",
+            "detected": true
+          },
+          {
+            "planted": "missing_explanations",
+            "detected": true
+          }
+        ],
+        "status_integrity_preserved": true
+      }
+    ],
+    "planted_violations_detected": "11/11",
+    "detection_rate": 1.0,
+    "false_alarms_on_compliant_output": 0,
+    "status_integrity_preserved": "6/6"
+  },
+  "d_live_model_behaviour": {
+    "skipped": true,
+    "reason": "model-following behaviour can only be measured against the real api; run with --mode live and GEMINI_API_KEY set."
+  },
+  "limitations": [
+    "offline sections measure the prompt templates and this system's enforcement, not how well gemini follows them.",
+    "simulated outputs are hand-written representative failures, not a sample of real model errors.",
+    "the injection probes are a small fixed set; absence of leakage here is not proof of robustness.",
+    "ground truth and prompts were written by the same author, so live scores are indicative, not independent."
+  ]
+}

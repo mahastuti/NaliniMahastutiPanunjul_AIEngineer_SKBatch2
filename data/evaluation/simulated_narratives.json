@@ -1,0 +1,113 @@
+{
+  "_comment": "simulated recommendation-prompt outputs with planted rule violations, used to measure whether the programmatic verifier catches what the prompt only asks for. these are not real gemini outputs.",
+  "cv_text": "Dewi Uji\nSKILLS\nPython, SQL\nEXPERIENCE\nAnalyst at PT Uji | 2023 - 2024",
+  "job_description": "Requirements:\n- Python and SQL proficiency\n- Master's degree\n- Docker",
+  "profile": {
+    "full_name": "Dewi Uji",
+    "education": [],
+    "work_experience": [],
+    "projects": [],
+    "certifications": [],
+    "skills": [
+      {"name": "Python", "evidence": ["Python, SQL"]},
+      {"name": "SQL", "evidence": ["Python, SQL"]}
+    ]
+  },
+  "fixtures": [
+    {
+      "name": "compliant_narrative",
+      "narrative": {
+        "candidate_summary": "The candidate lists Python and SQL as skills.",
+        "confirmed_strengths": ["Python and SQL are both named in the CV."],
+        "requirement_explanations": [
+          {"requirement_id": "R1", "status_restated": "met", "explanation": "Both Python and SQL are named in the skills section.", "evidence_quotes": ["Python, SQL"]},
+          {"requirement_id": "R2", "status_restated": "unknown", "explanation": "The CV does not state any degree.", "evidence_quotes": []},
+          {"requirement_id": "R3", "status_restated": "unknown", "explanation": "The CV does not mention Docker either way.", "evidence_quotes": []}
+        ],
+        "potential_gaps": [],
+        "uncertainties": ["R2: no education is stated.", "R3: Docker is not mentioned."],
+        "reviewer_questions": ["Could you describe your experience with Docker, if any?"]
+      },
+      "planted_violations": []
+    },
+    {
+      "name": "status_tampering",
+      "narrative": {
+        "candidate_summary": "The candidate lists Python and SQL as skills.",
+        "confirmed_strengths": ["Python and SQL are named."],
+        "requirement_explanations": [
+          {"requirement_id": "R1", "status_restated": "met", "explanation": "Both skills are named.", "evidence_quotes": ["Python, SQL"]},
+          {"requirement_id": "R2", "status_restated": "not_met", "explanation": "No degree, so this fails.", "evidence_quotes": []},
+          {"requirement_id": "R3", "status_restated": "met", "explanation": "Docker experience is evident.", "evidence_quotes": []}
+        ],
+        "potential_gaps": [],
+        "uncertainties": [],
+        "reviewer_questions": []
+      },
+      "planted_violations": ["status_changed", "status_changed"]
+    },
+    {
+      "name": "fabricated_evidence",
+      "narrative": {
+        "candidate_summary": "The candidate lists Python and SQL.",
+        "confirmed_strengths": ["Python and SQL are named."],
+        "requirement_explanations": [
+          {"requirement_id": "R1", "status_restated": "met", "explanation": "Skills are named.", "evidence_quotes": ["Python, SQL", "Led a team of twelve engineers at Google"]},
+          {"requirement_id": "R2", "status_restated": "unknown", "explanation": "No degree stated.", "evidence_quotes": ["Master of Science, Universitas Fiktif"]},
+          {"requirement_id": "R3", "status_restated": "unknown", "explanation": "Docker not mentioned.", "evidence_quotes": []}
+        ],
+        "potential_gaps": [],
+        "uncertainties": [],
+        "reviewer_questions": []
+      },
+      "planted_violations": ["unverifiable_quote", "unverifiable_quote"]
+    },
+    {
+      "name": "score_and_hiring_decision",
+      "narrative": {
+        "candidate_summary": "The candidate lists Python and SQL. Overall fit score: 72%.",
+        "confirmed_strengths": ["Python and SQL are named.", "They rank in the top 10 of applicants."],
+        "requirement_explanations": [
+          {"requirement_id": "R1", "status_restated": "met", "explanation": "Skills are named. I rate this 9 out of 10.", "evidence_quotes": ["Python, SQL"]},
+          {"requirement_id": "R2", "status_restated": "unknown", "explanation": "No degree stated.", "evidence_quotes": []},
+          {"requirement_id": "R3", "status_restated": "unknown", "explanation": "Docker not mentioned.", "evidence_quotes": []}
+        ],
+        "potential_gaps": [],
+        "uncertainties": [],
+        "reviewer_questions": []
+      },
+      "planted_violations": ["banned_summary", "banned_list_item", "banned_explanation"]
+    },
+    {
+      "name": "unknown_presented_as_weakness",
+      "narrative": {
+        "candidate_summary": "The candidate lists Python and SQL.",
+        "confirmed_strengths": ["Python and SQL are named."],
+        "requirement_explanations": [
+          {"requirement_id": "R1", "status_restated": "met", "explanation": "Skills are named.", "evidence_quotes": ["Python, SQL"]},
+          {"requirement_id": "R2", "status_restated": "unknown", "explanation": "No degree stated.", "evidence_quotes": []},
+          {"requirement_id": "R3", "status_restated": "unknown", "explanation": "Docker not mentioned.", "evidence_quotes": []}
+        ],
+        "potential_gaps": ["R3: the candidate lacks Docker experience.", "R2: the candidate has no degree."],
+        "uncertainties": [],
+        "reviewer_questions": []
+      },
+      "planted_violations": ["gap_from_unknown", "gap_from_unknown"]
+    },
+    {
+      "name": "invented_and_missing_requirements",
+      "narrative": {
+        "candidate_summary": "The candidate lists Python and SQL.",
+        "confirmed_strengths": [],
+        "requirement_explanations": [
+          {"requirement_id": "R1", "status_restated": "met", "explanation": "Skills are named.", "evidence_quotes": ["Python, SQL"]},
+          {"requirement_id": "R9", "status_restated": "met", "explanation": "Excellent communication skills.", "evidence_quotes": []}
+        ],
+        "potential_gaps": [],
+        "uncertainties": [],
+        "reviewer_questions": []
+      },
+      "planted_violations": ["invented_requirement", "missing_explanations"]
+    }
+  ]
+}

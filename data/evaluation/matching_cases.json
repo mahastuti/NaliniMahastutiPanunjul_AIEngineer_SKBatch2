@@ -1,0 +1,85 @@
+{
+  "_comment": "hand-labeled ground truth for the deterministic matching engine. each case: a candidate profile (as if extracted and grounded), the job description text, and the expected status per requirement id.",
+  "cases": [
+    {
+      "name": "fully_matching_candidate",
+      "job_description_file": "data/job_requirements/data_analyst.txt",
+      "profile": {
+        "full_name": "Kandidat Penuh",
+        "education": [
+          {"institution": "Universitas Fiktif", "degree": "Bachelor of Statistics", "degree_level": "bachelor", "field_of_study": "Statistics", "start_date": "2014", "end_date": "2018", "in_progress": false, "evidence": ["Bachelor of Statistics"]}
+        ],
+        "work_experience": [
+          {"company": "PT Fiksi Data", "title": "Data Analyst", "start_date": "2019-01", "end_date": "2024-06", "is_current": false, "responsibilities": ["Deploying machine learning models with Docker for churn scoring."], "technologies": ["Python", "SQL", "Tableau", "Docker"], "evidence": ["Data Analyst at PT Fiksi Data"]}
+        ],
+        "skills": [
+          {"name": "Python", "evidence": ["Python"]},
+          {"name": "SQL", "evidence": ["SQL"]},
+          {"name": "Tableau", "evidence": ["Tableau"]},
+          {"name": "Time series forecasting", "evidence": ["Time series forecasting"]}
+        ],
+        "projects": [],
+        "certifications": [
+          {"name": "Google Cloud Professional Data Engineer", "issuer": "Google", "date": "2023", "evidence": ["Google Cloud Professional Data Engineer"]}
+        ]
+      },
+      "expected": {"R1": "met", "R2": "met", "R3": "met", "R4": "met", "R5": "met", "R6": "met", "R7": "met"}
+    },
+    {
+      "name": "partially_matching_candidate",
+      "job_description_file": "data/job_requirements/data_analyst.txt",
+      "profile": {
+        "full_name": "Kandidat Sebagian",
+        "education": [
+          {"institution": "Universitas Fiktif", "degree": "Diploma Statistika", "degree_level": "diploma", "field_of_study": null, "start_date": null, "end_date": "2020", "in_progress": false, "evidence": ["Diploma Statistika"]}
+        ],
+        "work_experience": [
+          {"company": "PT Separuh Jalan", "title": "Junior Analyst", "start_date": "2023-01", "end_date": "2024-06", "is_current": false, "responsibilities": ["Weekly reporting in Excel."], "technologies": ["Microsoft Excel"], "evidence": ["Junior Analyst at PT Separuh Jalan"]}
+        ],
+        "skills": [
+          {"name": "Python", "evidence": ["Python"]},
+          {"name": "SQL", "evidence": ["SQL"]}
+        ],
+        "projects": [],
+        "certifications": []
+      },
+      "expected": {"R1": "not_met", "R2": "not_met", "R3": "met", "R4": "unknown", "R5": "unknown", "R6": "unknown", "R7": "unknown"}
+    },
+    {
+      "name": "insufficient_information_candidate",
+      "job_description_file": "data/job_requirements/data_analyst.txt",
+      "profile": {
+        "full_name": null,
+        "education": [],
+        "work_experience": [],
+        "skills": [
+          {"name": "Python", "evidence": ["Python"]}
+        ],
+        "projects": [],
+        "certifications": []
+      },
+      "expected": {"R1": "unknown", "R2": "unknown", "R3": "unknown", "R4": "unknown", "R5": "unknown", "R6": "unknown", "R7": "unknown"}
+    },
+    {
+      "name": "undated_roles_block_not_met",
+      "job_description_file": "data/job_requirements/data_analyst.txt",
+      "profile": {
+        "full_name": "Kandidat Tanpa Tanggal",
+        "education": [
+          {"institution": "Universitas Fiktif", "degree": "Sarjana Ekonomi", "degree_level": "bachelor", "field_of_study": null, "start_date": null, "end_date": "2019", "in_progress": false, "evidence": ["Sarjana Ekonomi"]}
+        ],
+        "work_experience": [
+          {"company": "PT Singkat", "title": "Analyst", "start_date": "2024-01", "end_date": "2024-06", "is_current": false, "responsibilities": [], "technologies": ["Tableau"], "evidence": ["Analyst at PT Singkat"]},
+          {"company": "CV Misteri", "title": "Staff", "start_date": null, "end_date": null, "is_current": null, "responsibilities": [], "technologies": [], "evidence": ["Staff at CV Misteri"]}
+        ],
+        "skills": [
+          {"name": "Python", "evidence": ["Python"]},
+          {"name": "SQL", "evidence": ["SQL"]}
+        ],
+        "projects": [],
+        "certifications": []
+      },
+      "expected": {"R1": "unknown", "R2": "met", "R3": "met", "R4": "met", "R5": "unknown", "R6": "unknown", "R7": "unknown"}
+    }
+  ]
+}

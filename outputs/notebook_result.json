@@ -1,8 +1,12 @@
 {
-  "mode": "mock",
+  "mode": "live",
   "provenance": {
-    "profile_source": "mock_canned",
-    "model": null,
+    "profile_source": "gemini_llm",
+    "model": "gemini-3.5-flash",
+    "extraction_prompt_version": "extraction-v1",
+    "narrative_source": "gemini_llm",
+    "recommendation_prompt_version": "recommendation-v1",
+    "matching_source": "deterministic_rules",
     "grounded_in_cv_text": true,
     "human_verified": false
   },
@@ -127,7 +131,7 @@
         "is_current": false,
         "responsibilities": [
           "Built SQL-based dashboards in Tableau for weekly sales reporting.",
-          "Automated weekly reports with Python (pandas).",
+          "Automated weekly reports with Python (pandas), saving about 6 hours per week.",
           "Forecasted product demand with ARIMA models."
         ],
         "technologies": [
@@ -138,10 +142,7 @@
           "ARIMA"
         ],
         "evidence": [
-          "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024",
-          "Built SQL-based dashboards in Tableau for weekly sales reporting.",
-          "Automated weekly reports with Python (pandas), saving about 6 hours per week.",
-          "Forecasted product demand with ARIMA models."
+          "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
         ]
       },
       {
@@ -157,8 +158,7 @@
           "R"
         ],
         "evidence": [
-          "Research Assistant - Universitas Contoh | 2019 - 2020",
-          "Cleaned survey datasets in R and prepared descriptive statistics."
+          "Research Assistant - Universitas Contoh | 2019 - 2020"
         ]
       }
     ],
@@ -210,7 +210,7 @@
     "certifications": [
       {
         "name": "Google Data Analytics Certificate",
-        "issuer": "Google",
+        "issuer": null,
         "date": "2022",
         "evidence": [
           "Google Data Analytics Certificate (2022)"
@@ -286,10 +286,6 @@
           {
             "section": "work_experience",
             "quote": "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
-          },
-          {
-            "section": "work_experience",
-            "quote": "Built SQL-based dashboards in Tableau for weekly sales reporting."
           }
         ]
       },
@@ -310,10 +306,6 @@
           {
             "section": "work_experience",
             "quote": "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
-          },
-          {
-            "section": "work_experience",
-            "quote": "Built SQL-based dashboards in Tableau for weekly sales reporting."
           }
         ]
       },
@@ -384,19 +376,91 @@
         "code": "data_gap",
         "severity": "info",
         "message": "work_experience[1] ('Research Assistant') has year-only dates; durations are approximate."
-      },
-      {
-        "code": "mock_mode",
-        "severity": "warning",
-        "message": "MOCK MODE: this profile is a hard-coded demo fixture, not the output of any model. it only matches the bundled synthetic sample cv."
       }
     ],
     "requires_human_review": true,
     "is_final_decision": false,
     "decision_notice": "this is decision support only. a human reviewer must verify the extracted data against the original cv and make the hiring decision."
   },
+  "narrative": {
+    "candidate_summary": "Dewi Contoh has background experience working as a Data Analyst and Research Assistant, and holds a Bachelor of Statistics degree. Her listed capabilities include Python, SQL, Tableau, R, and time series forecasting.",
+    "confirmed_strengths": [
+      "3+ years of professional experience in data analysis",
+      "Bachelor's degree",
+      "Python and SQL proficiency",
+      "Experience with Tableau or Power BI",
+      "Time series forecasting"
+    ],
+    "requirement_explanations": [
+      {
+        "requirement_id": "R1",
+        "status_restated": "met",
+        "explanation": "The candidate has cumulative dated professional roles totaling over 3 years.",
+        "evidence_quotes": [
+          "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024",
+          "Research Assistant - Universitas Contoh | 2019 - 2020"
+        ]
+      },
+      {
+        "requirement_id": "R2",
+        "status_restated": "met",
+        "explanation": "completed Bachelor of Statistics degree is listed.",
+        "evidence_quotes": [
+          "Bachelor of Statistics - Universitas Contoh | 2015 - 2019"
+        ]
+      },
+      {
+        "requirement_id": "R3",
+        "status_restated": "met",
+        "explanation": "Python and SQL are explicitly mentioned in skills and work experience.",
+        "evidence_quotes": [
+          "Python, SQL, R, Tableau, Microsoft Excel",
+          "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
+        ]
+      },
+      {
+        "requirement_id": "R4",
+        "status_restated": "met",
+        "explanation": "Tableau is explicitly listed under skills and work experience.",
+        "evidence_quotes": [
+          "Python, SQL, R, Tableau, Microsoft Excel",
+          "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
+        ]
+      },
+      {
+        "requirement_id": "R5",
+        "status_restated": "unknown",
+        "explanation": "The CV does not mention Docker or experience deploying machine learning models.",
+        "evidence_quotes": []
+      },
+      {
+        "requirement_id": "R6",
+        "status_restated": "met",
+        "explanation": "Time series forecasting is explicitly noted in project work.",
+        "evidence_quotes": [
+          "Retail Demand Forecasting - Time series forecasting project comparing ARIMA and Prophet on public retail data."
+        ]
+      },
+      {
+        "requirement_id": "R7",
+        "status_restated": "unknown",
+        "explanation": "The CV lists a Google Data Analytics Certificate, but does not clarify whether a Google Cloud certification is held.",
+        "evidence_quotes": []
+      }
+    ],
+    "potential_gaps": [],
+    "uncertainties": [
+      "Requirement R5 (deploying machine learning models with Docker) is unknown as it is not mentioned in the candidate CV data.",
+      "Requirement R7 (Google Cloud certification) is unknown because only a Google Data Analytics Certificate is specified."
+    ],
+    "reviewer_questions": [
+      "Have you worked with Docker or deployed machine learning models into production?",
+      "Do you possess any Google Cloud certifications?"
+    ]
+  },
   "notices": [
     "llm output is not verified fact: every extracted item carries evidence quotes that were checked against the cv text, but a human must confirm them.",
-    "this is decision support only. a human reviewer must verify the extracted data against the original cv and make the hiring decision."
+    "this is decision support only. a human reviewer must verify the extracted data against the original cv and make the hiring decision.",
+    "the narrative is an llm explanation of the deterministic matching result; it was checked programmatically and cannot change any requirement status."
   ]
 }

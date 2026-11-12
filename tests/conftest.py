@@ -8,12 +8,12 @@ ROOT = Path(__file__).resolve().parent.parent
 
 @pytest.fixture
 def sample_pdf() -> bytes:
-    return (ROOT / "samples" / "synthetic_cv.pdf").read_bytes()
+    return (ROOT / "data" / "sample_cvs" / "synthetic_cv_01_clean.pdf").read_bytes()
 
 
 @pytest.fixture
 def sample_jd() -> str:
-    return (ROOT / "samples" / "job_description.txt").read_text(encoding="utf-8")
+    return (ROOT / "data" / "job_requirements" / "data_analyst.txt").read_text(encoding="utf-8")
 
 
 def make_text_pdf(text: str) -> bytes:

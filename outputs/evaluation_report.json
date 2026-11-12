@@ -1,0 +1,177 @@
+{
+  "mode": "mock",
+  "eval_date_fixed": "2026-11-12",
+  "matching_engine": {
+    "cases": [
+      {
+        "case": "fully_matching_candidate",
+        "signal": "strong_support",
+        "mismatches": {}
+      },
+      {
+        "case": "partially_matching_candidate",
+        "signal": "mandatory_gap",
+        "mismatches": {}
+      },
+      {
+        "case": "insufficient_information_candidate",
+        "signal": "insufficient_information",
+        "mismatches": {}
+      },
+      {
+        "case": "undated_roles_block_not_met",
+        "signal": "partial_support",
+        "mismatches": {}
+      }
+    ],
+    "n_cases": 4,
+    "exact_match_cases": 4,
+    "requirement_level_accuracy": 1.0,
+    "n_requirement_labels": 28,
+    "per_status": {
+      "met": {
+        "support": 11,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "not_met": {
+        "support": 2,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "unknown": {
+        "support": 15,
+        "recall": 1.0,
+        "precision": 1.0
+      }
+    },
+    "confusion_expected_vs_predicted": {
+      "met": {
+        "met": 11,
+        "not_met": 0,
+        "unknown": 0
+      },
+      "not_met": {
+        "met": 0,
+        "not_met": 2,
+        "unknown": 0
+      },
+      "unknown": {
+        "met": 0,
+        "not_met": 0,
+        "unknown": 15
+      }
+    }
+  },
+  "validation_and_grounding": {
+    "fixtures": [
+      {
+        "fixture": "faithful_output",
+        "schema_valid": true,
+        "validation_as_expected": true,
+        "grounding_issues_reported": 0
+      },
+      {
+        "fixture": "hallucinated_items",
+        "schema_valid": true,
+        "validation_as_expected": true,
+        "grounding_issues_reported": 3
+      },
+      {
+        "fixture": "paraphrased_evidence_and_wrong_name",
+        "schema_valid": true,
+        "validation_as_expected": true,
+        "grounding_issues_reported": 2
+      },
+      {
+        "fixture": "malformed_json",
+        "schema_valid": false,
+        "validation_as_expected": true
+      },
+      {
+        "fixture": "protected_attribute_smuggled",
+        "schema_valid": false,
+        "validation_as_expected": true
+      },
+      {
+        "fixture": "wrong_types",
+        "schema_valid": false,
+        "validation_as_expected": true
+      }
+    ],
+    "n_fixtures": 6,
+    "validation_decisions_correct": "6/6",
+    "fabricated_items_total": 4,
+    "fabricated_items_dropped": 4,
+    "hallucination_containment_rate": 1.0,
+    "genuine_items_total": 9,
+    "genuine_items_kept": 9,
+    "genuine_retention_rate": 1.0
+  },
+  "pipeline_reliability": {
+    "mode": "mock",
+    "runs": [
+      {
+        "cv": "synthetic_cv_01_clean.pdf",
+        "ok": true,
+        "seconds": 0.008,
+        "signal": "partial_support",
+        "extracted_items_survived": 10,
+        "requires_human_review": true
+      },
+      {
+        "cv": "synthetic_cv_02_ambiguous.pdf",
+        "ok": true,
+        "seconds": 0.003,
+        "signal": "insufficient_information",
+        "extracted_items_survived": 0,
+        "requires_human_review": true
+      },
+      {
+        "cv": "synthetic_cv_03_sparse.pdf",
+        "ok": true,
+        "seconds": 0.003,
+        "signal": "insufficient_information",
+        "extracted_items_survived": 0,
+        "requires_human_review": true
+      },
+      {
+        "cv": "synthetic_cv_04_injection.pdf",
+        "ok": true,
+        "seconds": 0.003,
+        "signal": "insufficient_information",
+        "extracted_items_survived": 0,
+        "requires_human_review": true
+      }
+    ],
+    "success_rate": "4/4",
+    "mean_seconds": 0.004,
+    "error_paths": [
+      {
+        "case": "not_a_pdf",
+        "structured_error": true,
+        "got": "unsupported_format"
+      },
+      {
+        "case": "corrupt_pdf",
+        "structured_error": true,
+        "got": "corrupt_pdf"
+      },
+      {
+        "case": "empty_file",
+        "structured_error": true,
+        "got": "empty_file"
+      }
+    ],
+    "error_paths_correct": "3/3"
+  },
+  "extraction_quality": {
+    "measured_elsewhere": "scripts/evaluate_prompts.py --mode live",
+    "reason": "extraction quality depends on the prompt and the model; the mock profile is a fixture, so scoring it here would be circular."
+  },
+  "limitations": [
+    "tiny hand-made dataset (4 matching cases, 6 simulated outputs, 3 synthetic cvs); results show behavior on covered scenarios, not general performance.",
+    "ground truth was written by the same author as the rules, so matching metrics are regression checks, not an independent benchmark.",
+    "simulated llm outputs test this system's defenses, not gemini's real error distribution."
+  ]
+}

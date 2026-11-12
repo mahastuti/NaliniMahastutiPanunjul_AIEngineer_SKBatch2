@@ -30,7 +30,7 @@ def test_mock_end_to_end(sample_pdf, sample_jd):
 
 def test_mock_result_matches_committed_sample_output(sample_pdf, sample_jd):
     from pathlib import Path
-    committed = json.loads((Path(__file__).parent.parent / "samples" / "sample_output_mock.json").read_text())
+    committed = json.loads((Path(__file__).parent.parent / "outputs" / "sample_output_mock.json").read_text())
     fresh = run_screening(pdf_bytes=sample_pdf, job_description=sample_jd, mode="mock")
     assert [a["status"] for a in committed["recommendation"]["assessments"]] == \
            [a.status for a in fresh.recommendation.assessments]
@@ -69,6 +69,63 @@ def test_prompt_injection_in_cv_is_flagged_and_has_no_effect(text_pdf_factory, s
     assert any(c.code == "possible_prompt_injection" for c in result.recommendation.caveats)
     statuses = {a.requirement_id: a.status for a in result.recommendation.assessments}
     assert statuses["R5"] == "unknown" and statuses["R1"] == "unknown"
+
+
+def test_narrative_is_off_by_default(sample_pdf, sample_jd):
+    result = run_screening(pdf_bytes=sample_pdf, job_description=sample_jd, mode="mock", today=TODAY)
+    assert result.narrative is None
+    assert result.provenance.narrative_source is None
+    assert result.provenance.recommendation_prompt_version is None
+
+
+def test_narrative_restates_deterministic_statuses(sample_pdf, sample_jd):
+    result = run_screening(pdf_bytes=sample_pdf, job_description=sample_jd, mode="mock",
+                           today=TODAY, include_narrative=True)
+    assert result.narrative is not None
+    assert result.provenance.narrative_source == "mock_canned"
+    assert result.provenance.recommendation_prompt_version == "recommendation-v1"
+    assert result.provenance.matching_source == "deterministic_rules"
+    restated = {e.requirement_id: e.status_restated for e in result.narrative.requirement_explanations}
+    assert restated == {a.requirement_id: a.status for a in result.recommendation.assessments}
+    ScreeningResult.model_validate(json.loads(result.model_dump_json()))
+
+
+def test_narrative_cannot_override_matching_in_live_mode(sample_pdf, sample_jd):
+    """the model claims every requirement is met; the deterministic result must survive."""
+    profile_payload = {
+        "full_name": "Dewi Contoh", "education": [], "projects": [], "certifications": [],
+        "work_experience": [], "skills": [
+            {"name": "Python", "evidence": ["Python, SQL, R, Tableau, Microsoft Excel"]}],
+    }
+    narrative_payload = {
+        "candidate_summary": "An outstanding candidate. Overall score: 95%.",
+        "confirmed_strengths": ["Meets everything."],
+        "requirement_explanations": [
+            {"requirement_id": f"R{i}", "status_restated": "met",
+             "explanation": "Clearly satisfied.", "evidence_quotes": []} for i in range(1, 8)
+        ],
+        "potential_gaps": [], "uncertainties": [],
+        "reviewer_questions": ["Should we hire this candidate immediately?"],
+    }
+
+    def dispatch(**kw):
+        # pick the payload by the schema the caller asked for (the narrative schema is
+        # the only one with a candidate_summary property)
+        schema = kw["config"].response_schema
+        payload = narrative_payload if "candidate_summary" in str(schema) else profile_payload
+        return SimpleNamespace(text=json.dumps(payload))
+
+    client = SimpleNamespace(models=SimpleNamespace(generate_content=dispatch))
+    result = run_screening(pdf_bytes=sample_pdf, job_description=sample_jd, mode="live",
+                           client=client, model="fake", today=TODAY, include_narrative=True)
+
+    deterministic = {a.requirement_id: a.status for a in result.recommendation.assessments}
+    restated = {e.requirement_id: e.status_restated for e in result.narrative.requirement_explanations}
+    assert restated == deterministic
+    assert "unknown" in deterministic.values()      # not everything became met
+    assert "95%" not in result.narrative.candidate_summary
+    assert not any("hire" in q.lower() for q in result.narrative.reviewer_questions)
+    assert any(c.code == "narrative_violation" for c in result.recommendation.caveats)
 
 
 def test_errors_propagate_with_codes(sample_jd, sample_pdf, monkeypatch):

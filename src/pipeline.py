@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from src.llm_extractor import extract_profile
+from src.narrative import generate_narrative
 from src.pdf_parser import extract_text
 from src.recommendation import build_recommendation, parse_job_description
 from src.schemas import Caveat, Mode, Provenance, ScreeningError, ScreeningResult
@@ -38,6 +39,7 @@ def run_screening(
     model: str | None = None,
     today: date | None = None,
     client: Any | None = None,
+    include_narrative: bool = False,
 ) -> ScreeningResult:
     """run the full flow in memory. nothing is written to disk and no cv text is logged."""
     # step 1: parse the job description first, so bad input fails before any api call
@@ -64,25 +66,52 @@ def run_screening(
             message="the cv contains phrases that look like instructions to an ai system. they were treated as data and had no effect on the comparison, but review the cv manually.",
         ))
 
-    # step 5: deterministic comparison
+    # step 5: deterministic comparison (never touched by an llm)
     recommendation = build_recommendation(extraction.profile, job, today=today, extra_caveats=extra)
 
+    # step 6: optional llm narrative explaining — not altering — the result above
+    narrative = None
+    narrative_result = None
+    if include_narrative:
+        narrative_result = generate_narrative(
+            extraction.profile, job, recommendation, parsed.text,
+            mode=mode, api_key=api_key, model=model, client=client,
+        )
+        narrative = narrative_result.report
+        for violation in narrative_result.violations:
+            recommendation.caveats.append(
+                Caveat(code="narrative_violation", severity="warning", message=violation)
+            )
+
     logger.info(
-        "screening done: mode=%s requirements=%d signal=%s",
-        mode, len(job.requirements), recommendation.signal,
+        "screening done: mode=%s requirements=%d signal=%s narrative=%s",
+        mode, len(job.requirements), recommendation.signal, include_narrative,
     )
+    notices = [
+        "llm output is not verified fact: every extracted item carries evidence quotes that were checked against the cv text, but a human must confirm them.",
+        recommendation.decision_notice,
+    ]
+    if include_narrative:
+        notices.append(
+            "the narrative is an llm explanation of the deterministic matching result; it was "
+            "checked programmatically and cannot change any requirement status."
+        )
     return ScreeningResult(
         mode=mode,
         provenance=Provenance(
-            profile_source="mock_canned" if mode == "mock" else "gemini_llm", model=extraction.model
+            profile_source="mock_canned" if mode == "mock" else "gemini_llm",
+            model=extraction.model,
+            extraction_prompt_version=extraction.prompt_version,
+            narrative_source=(None if narrative_result is None
+                              else ("mock_canned" if mode == "mock" else "gemini_llm")),
+            recommendation_prompt_version=(None if narrative_result is None
+                                           else narrative_result.prompt_version),
         ),
         job=job,
         profile=extraction.profile,
         recommendation=recommendation,
-        notices=[
-            "llm output is not verified fact: every extracted item carries evidence quotes that were checked against the cv text, but a human must confirm them.",
-            recommendation.decision_notice,
-        ],
+        narrative=narrative,
+        notices=notices,
     )
 
 
@@ -99,6 +128,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cv", required=True, type=Path)
     parser.add_argument("--jd", required=True, type=Path, help="text file with the job description")
     parser.add_argument("--mode", choices=["mock", "live"], default="mock")
+    parser.add_argument("--narrative", action="store_true",
+                        help="also generate the llm narrative explanation (second prompt)")
     parser.add_argument("--out", type=Path, help="optional path to write the json result")
     args = parser.parse_args(argv)
 
@@ -109,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
             pdf_bytes=args.cv.read_bytes(),
             job_description=args.jd.read_text(encoding="utf-8"),
             mode=args.mode,
+            include_narrative=args.narrative,
         )
     except (ScreeningError, OSError) as exc:
         code = getattr(exc, "code", type(exc).__name__)
