@@ -1,0 +1,15 @@
+Job Title: Data Analyst
+
+About the role
+We are looking for a data analyst to support reporting and forecasting for our commercial team.
+
+Requirements:
+- 3+ years of professional experience in data analysis
+- Bachelor's degree
+- Python and SQL proficiency
+- Experience with Tableau or Power BI
+- Experience deploying machine learning models with Docker
+
+Nice to have:
+- Time series forecasting
+- Google Cloud certification
