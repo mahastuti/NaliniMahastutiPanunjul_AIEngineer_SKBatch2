@@ -146,7 +146,9 @@ Machine-readable results: `outputs/prompt_comparison.json`.
 `controlled_configuration: true` — schema, temperature and input variables are identical in both
 arms, so the system prompt is the only variable.
 
-**B. Extraction-quality comparison: not measured.** No API key in the development environment.
+**B. Extraction-quality comparison: not measured.** The live comparison has not completed; the
+one live attempt at live extraction scoring (through `evaluate_prompts.py`) returned `api_error`
+on every CV.
 The harness scores both versions over the same CVs against
 `data/evaluation/extraction_ground_truth.json` (name accuracy, skill/company/certification
 precision and recall, degree-level accuracy, items dropped by grounding, unsupported claims,
@@ -166,7 +168,12 @@ From `python scripts/evaluate_prompts.py --mode mock` (actual output, this envir
   **4/4** unsupported claims blocked; **9/9** genuine items retained.
 - **C. Recommendation contract: 11/11** planted violations detected, **0** false alarms on the
   compliant fixture, **6/6** fixtures preserved status integrity after verification.
-- **D. Live model behaviour: not measured** (no API key in this environment).
+- **D. Live model behaviour: attempted, not obtained.** `evaluate_prompts.py --mode live` was
+  run against the real API and all four CVs returned `api_error` during a period of
+  unavailability (`cvs_scored: 0`, `cvs_failed: 4`). The attempt is recorded in
+  `outputs/prompt_evaluation.json` rather than lost, because that script records a per-CV
+  failure and continues; it still yields no accuracy figures, so the measurement has to be
+  repeated when the API is available.
 
 ## Limitations
 

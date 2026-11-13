@@ -208,3 +208,30 @@ def test_evaluation_csv_handles_a_failed_pipeline_run(tmp_path):
     text = path.read_text(encoding="utf-8")
     assert "broken.pdf,error_code,api_error" in text
     assert "ok.pdf,signal,partial_support" in text
+
+
+@pytest.mark.parametrize("script", ["scripts/evaluate.py", "scripts/evaluate_prompts.py"])
+def test_a_mock_run_refuses_to_overwrite_a_live_report(script, tmp_path, capsys):
+    """live results cost api calls and cannot be regenerated offline; a mock run writing to
+    the same path must stop instead of silently replacing them."""
+    import importlib.util
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    spec = importlib.util.spec_from_file_location("evalmod", root / script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    out = tmp_path / "report.json"
+    out.write_text(json.dumps({"mode": "live", "precious": True}), encoding="utf-8")
+
+    assert module.refuse_to_clobber_live(out, "mock", force=False) is True
+    assert json.loads(out.read_text(encoding="utf-8"))["precious"] is True
+
+    # a live run, an explicit --force, and a mock report may all be overwritten
+    assert module.refuse_to_clobber_live(out, "live", force=False) is False
+    assert module.refuse_to_clobber_live(out, "mock", force=True) is False
+    out.write_text(json.dumps({"mode": "mock"}), encoding="utf-8")
+    assert module.refuse_to_clobber_live(out, "mock", force=False) is False
+    assert module.refuse_to_clobber_live(tmp_path / "absent.json", "mock", force=False) is False

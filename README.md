@@ -62,7 +62,7 @@ Python 3.11+, PyMuPDF, Google Gemini API via `google-genai`, Pydantic v2, pytest
 │   └── evaluation/            # hand-labeled ground truth + fixtures
 ├── outputs/                   # generated results, evaluation reports, per-run artifacts
 │   └── runs/<run_id>/         # candidate_extraction / requirement_matching / screening_report / execution_trace
-├── tests/                     # 145 pytest tests
+├── tests/                     # 154 pytest tests
 ├── scripts/
 │   ├── make_sample_cv.py              # regenerate synthetic cvs
 │   ├── evaluate.py                    # system-level measured evaluation (+ csv)
@@ -151,23 +151,23 @@ Corrections are typed (`incorrect_extraction`, `unsupported_qualification`, `unv
 pytest
 ```
 
-145 tests: PDF edge cases (valid/empty/scanned/corrupt/encrypted), schema validation (types, dates, forbidden extra fields, undecidable-decision schema), prompt rendering, prompt-version selection and injection containment, matching rules (met/not_met/unknown, must-have vs nice-to-have, date arithmetic), narrative verification (status tampering, fabricated evidence, scores, hire/reject language, `unknown` misreported as a gap), execution tracing (stage order, failure recording, retry and token accounting), run artifacts (four files, per-run isolation, no CV text in traces), reviewer corrections (path validation, scope rules, immutability of the AI output), pipeline end-to-end, API-failure and invalid-response handling with a fake client, human-review fallback, no-persistence and no-CV-in-logs checks. LLM calls in tests are mocked.
+154 tests: PDF edge cases (valid/empty/scanned/corrupt/encrypted), schema validation (types, dates, forbidden extra fields, undecidable-decision schema), prompt rendering, prompt-version selection and injection containment, matching rules (met/not_met/unknown, must-have vs nice-to-have, date arithmetic), narrative verification (status tampering, fabricated evidence, scores, hire/reject language, `unknown` misreported as a gap), execution tracing (stage order, failure recording, retry and token accounting), run artifacts (four files, per-run isolation, no CV text in traces), reviewer corrections (path validation, scope rules, immutability of the AI output), pipeline end-to-end, API-failure and invalid-response handling with a fake client, human-review fallback, no-persistence and no-CV-in-logs checks. LLM calls in tests are mocked.
 
 ## 13. Evaluation Results
 
 Three measured evaluations; all figures are actual script output from this environment (mock mode). Per-case rows: `outputs/evaluation_results.csv`.
 
-**System** (`scripts/evaluate.py`): requirement-level matching accuracy **1.0** on 35 hand-labeled labels (5/5 cases exact); schema-validation decisions **6/6**; hallucination containment **4/4** fabricated items dropped with **9/9** genuine kept; pipeline success **4/4** CVs; structured error paths **3/3**.
+**System** (`scripts/evaluate.py`): requirement-level matching accuracy **1.0** on 35 hand-labeled labels (5/5 cases exact); schema-validation decisions **6/6**; hallucination containment **4/4** fabricated items dropped with **9/9** genuine kept; structured error paths **3/3**. End-to-end pipeline success is **3/4** CVs at **9.186 s** mean in live mode (the committed report) and 4/4 at 0.004 s in mock mode — the one live failure was an `api_error` on `synthetic_cv_04_injection.pdf`, not a pipeline fault.
 
 **Prompts** (`scripts/evaluate_prompts.py`): prompt-construction checks **14/14**; extraction schema decisions **6/6** with **4/4** unsupported claims blocked; planted narrative violations detected **11/11** with **0** false alarms; status integrity preserved **6/6**.
 
 **Prompt A/B** (`scripts/compare_extraction_prompts.py`): both extraction versions pass every required-rule check and contain **3/3** injection probes under an identical configuration; `extraction-v2` costs 986 more characters of system prompt. No quality claim is made offline.
 
-Model behaviour against real Gemini is **not measured** (needs an API key): run the two scripts with `--mode live`. Full discussion: `docs/evaluation.md`, `docs/prompt_engineering.md`.
+Extraction accuracy against real Gemini is **still not measured**: `evaluate_prompts.py --mode live` was run and all four CVs returned `api_error` during a period of API unavailability (recorded in `outputs/prompt_evaluation.json` as `cvs_scored: 0`). The measurement has to be repeated when the API is available. Full discussion: `docs/evaluation.md`, `docs/prompt_engineering.md`.
 
 ## 14. Known Limitations
 
-- **Live Gemini extraction accuracy is unmeasured.** Live integration was exercised during development — that is how the HTTP 400 schema bug, a retired model name (404) and 503 spikes were found and handled — but integration working is not the same as extraction being accurate. The measurement scripts exist and have not been run with a key here.
+- **Live Gemini extraction accuracy is unmeasured.** Live integration does work — three of four CVs were screened end to end against the real API — and the HTTP 400 schema bug, a retired model name (404) and 503 spikes were all found that way. But integration working is not the same as extraction being accurate, and the accuracy run itself returned `api_error` on all four CVs.
 - `extraction-v2` is a hypothesis, not an improvement: it has not been compared against v1 on real model output, which is why `extraction-v1` remains the default.
 - Offline prompt metrics measure the templates and this system's enforcement, not how well Gemini follows them.
 - Tiny, author-written evaluation sets — regression checks, not a benchmark.
