@@ -1,6 +1,6 @@
 {
-  "run_id": "run_1b51643178c8",
-  "started_at": "2026-11-12T19:26:55+00:00",
+  "run_id": "run_d25ecc32fbca",
+  "started_at": "2026-11-13T04:16:09+00:00",
   "pipeline_version": "1.1.0",
   "mode": "mock",
   "model": null,
@@ -10,7 +10,7 @@
     {
       "stage": "job_parsing",
       "status": "ok",
-      "duration_ms": 0.215,
+      "duration_ms": 0.178,
       "detail": "7 requirements parsed",
       "error_code": null,
       "error_category": null,
@@ -19,7 +19,7 @@
     {
       "stage": "document_processing",
       "status": "ok",
-      "duration_ms": 0.003,
+      "duration_ms": 0.002,
       "detail": "2410 bytes received",
       "error_code": null,
       "error_category": null,
@@ -28,7 +28,7 @@
     {
       "stage": "text_extraction",
       "status": "ok",
-      "duration_ms": 3.139,
+      "duration_ms": 3.149,
       "detail": "1 pages, 829 characters",
       "error_code": null,
       "error_category": null,
@@ -37,7 +37,7 @@
     {
       "stage": "llm_extraction",
       "status": "ok",
-      "duration_ms": 0.378,
+      "duration_ms": 0.478,
       "detail": "source=mock_canned",
       "error_code": null,
       "error_category": null,
@@ -64,7 +64,7 @@
     {
       "stage": "matching",
       "status": "ok",
-      "duration_ms": 0.626,
+      "duration_ms": 2.218,
       "detail": "signal=partial_support",
       "error_code": null,
       "error_category": null,
@@ -73,14 +73,14 @@
     {
       "stage": "recommendation",
       "status": "ok",
-      "duration_ms": 0.936,
+      "duration_ms": 0.864,
       "detail": "1 violations corrected",
       "error_code": null,
       "error_category": null,
       "retries": 0
     }
   ],
-  "total_duration_ms": 6.055,
+  "total_duration_ms": 7.895,
   "retry_total": 0,
   "error_categories": [],
   "token_usage": {

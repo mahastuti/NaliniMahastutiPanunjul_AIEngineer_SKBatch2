@@ -100,6 +100,31 @@ assessments and `insufficient_information` — the designed honest behaviour, no
 paths **3/3**: non-PDF bytes, corrupt PDF and empty upload each produced the expected structured
 error code.
 
+## Measured results (live mode)
+
+The committed `outputs/evaluation_report.json` and `outputs/evaluation_results.csv` are from a
+live run against the real Gemini API. Two things differ from mock mode, and only two: the
+matching, validation and grounding figures above are identical in both modes, because none of
+those components calls a model.
+
+| metric | live | mock |
+|---|---|---|
+| end-to-end success | **3/4** | 4/4 |
+| mean seconds per CV | **9.186** | 0.004 |
+
+The failure was `synthetic_cv_04_injection.pdf`, which returned `api_error` after 2.3 s; the
+other three CVs completed in 13.99 s, 8.84 s and 11.61 s. Because the same four CVs succeed
+4/4 in mock mode, the failure came from the API call rather than from pipeline logic. It is
+reported as measured rather than retried away: a transient-dependency failure rate is a real
+property of a system that calls a hosted model, and the retry policy
+(`MAX_TRANSIENT_RETRIES = 3`, exponential backoff) had already been exhausted.
+
+**Live extraction accuracy: attempted, not obtained.** `evaluate_prompts.py --mode live` was run
+and all four CVs returned `api_error` (`cvs_scored: 0`, `cvs_failed: 4` in
+`outputs/prompt_evaluation.json`) during a period of API unavailability. The run is recorded
+rather than lost, which is the point of the per-CV error handling in that script, but it yields
+no accuracy figures. The measurement still has to be repeated when the API is available.
+
 **Prompt level** (summary; full detail in `docs/prompt_engineering.md`) — construction checks
 **14/14**, planted narrative violations detected **11/11** with **0** false alarms, status
 integrity preserved **6/6**.
@@ -109,7 +134,7 @@ injection probes under an identical configuration (same schema, temperature and 
 variables); `extraction-v2`'s system prompt is 986 characters larger. No quality claim is made
 offline.
 
-**Tests** — 145 pytest tests pass, all LLM calls mocked.
+**Tests** — 154 pytest tests pass, all LLM calls mocked.
 
 ## API usage and execution time
 
@@ -122,12 +147,13 @@ is therefore not yet recorded here.
 
 ## Limitations of this evaluation
 
-1. **Live Gemini extraction accuracy is unmeasured.** The biggest gap. Live *integration* was
-   exercised during development — that is how the HTTP 400 schema bug, the 404 retired model and
-   the 503 spikes were found and handled — but integration working is not the same as extraction
-   being accurate. `evaluate_prompts.py --mode live` and `compare_extraction_prompts.py --mode live`
-   compute the accuracy figures; they have not been run with a key in this environment. Until
-   they are, nothing here states how well Gemini extracts or how often it obeys the prompts.
+1. **Live Gemini extraction accuracy is still unmeasured.** The biggest gap, and it is now a
+   measured failure rather than an untried step: `evaluate_prompts.py --mode live` ran and all
+   four CVs returned `api_error`. Live *integration* does work — the pipeline screened three of
+   four CVs live, and the HTTP 400 schema bug, the 404 retired model and the 503 spikes were all
+   found that way — but integration working is not the same as extraction being accurate. Until
+   `evaluate_prompts.py --mode live` and `compare_extraction_prompts.py --mode live` complete,
+   nothing here states how well Gemini extracts or how often it obeys the prompts.
 2. **Tiny, author-written dataset.** 5 matching cases, 6 simulated outputs, 4 synthetic CVs, all
    written by the author of the rules. Perfect scores mean the implementation matches its own
    specification on covered scenarios — regression tests, not generalisation. A different author

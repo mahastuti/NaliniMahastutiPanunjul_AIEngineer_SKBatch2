@@ -295,6 +295,33 @@ def write_csv(report: dict, path: Path) -> Path:
     return path
 
 
+
+def refuse_to_clobber_live(out: Path, mode: str, force: bool) -> bool:
+    """a mock run must not silently overwrite a live report.
+
+    live results cost api calls and cannot be regenerated offline, while a mock run can be
+    repeated at any time. overwriting the expensive artifact with the cheap one is therefore
+    never the safer default -- and it is an easy mistake, because the two runs write to the
+    same path. returns True when the caller should stop.
+    """
+    if mode != "mock" or force or not out.exists():
+        return False
+    try:
+        existing = json.loads(out.read_text(encoding="utf-8")).get("mode")
+    except (OSError, ValueError):
+        return False
+    if existing != "live":
+        return False
+    print(
+        f"refusing to overwrite {out}: it holds results from a live run, and this is a mock "
+        f"run. live results cannot be regenerated without an api key.\n"
+        f"  --force            overwrite anyway\n"
+        f"  --out <other path> write the mock run somewhere else",
+        file=sys.stderr,
+    )
+    return True
+
+
 def main(argv: list[str] | None = None) -> int:
     # live mode reads GEMINI_API_KEY from .env, exactly like the pipeline cli does
     from dotenv import load_dotenv
@@ -302,6 +329,8 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["mock", "live"], default="mock")
+    parser.add_argument("--force", action="store_true",
+                        help="allow a mock run to overwrite a live report")
     parser.add_argument("--out", type=Path, default=ROOT / "outputs/evaluation_report.json")
     parser.add_argument("--csv-only", action="store_true",
                         help="rebuild the csv from an existing report without re-running "
@@ -315,6 +344,9 @@ def main(argv: list[str] | None = None) -> int:
         csv_path = write_csv(report, args.csv)
         print(f"rebuilt {csv_path} from {args.out} (mode: {report['mode']}, no api calls)")
         return 0
+
+    if refuse_to_clobber_live(args.out, args.mode, args.force):
+        return 2
 
     report = {
         "mode": args.mode,
