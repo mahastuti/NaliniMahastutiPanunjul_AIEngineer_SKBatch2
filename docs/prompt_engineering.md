@@ -118,6 +118,11 @@ These are real failures from this repository's history, not illustrations.
    as an override and no hardcoded assumption that a model name stays valid. A model appearing
    in `client.models.list()` does not guarantee it is callable. The default is now
    `gemini-3.5-flash`, the name that actually completed a live run from this repository.
+1b. **A workaround became the next failure.** Switching `GEMINI_MODEL` to another model to get
+   past a 503 later produced a 404, because that name had been retired too. An override set in a
+   shell session also outlives the problem it was meant to solve and silently wins over `.env`,
+   since `load_dotenv()` does not overwrite an existing environment variable. Check `GEMINI_MODEL`
+   before trusting a live result.
 2. **Transient `503 UNAVAILABLE` (high demand).** The client retries once; beyond that the run
    fails loudly rather than returning a partial result. Retries and their reasons are now counted
    in the execution trace, so repeated 503s are visible rather than anecdotal.
@@ -147,8 +152,8 @@ Machine-readable results: `outputs/prompt_comparison.json`.
 arms, so the system prompt is the only variable.
 
 **B. Extraction-quality comparison: not measured.** The live comparison has not completed; the
-one live attempt at live extraction scoring (through `evaluate_prompts.py`) returned `api_error`
-on every CV.
+one attempt at live extraction scoring (through `evaluate_prompts.py`) failed on every CV with a
+404 from a stale `GEMINI_MODEL` override rather than with anything the model did.
 The harness scores both versions over the same CVs against
 `data/evaluation/extraction_ground_truth.json` (name accuracy, skill/company/certification
 precision and recall, degree-level accuracy, items dropped by grounding, unsupported claims,
@@ -169,11 +174,12 @@ From `python scripts/evaluate_prompts.py --mode mock` (actual output, this envir
 - **C. Recommendation contract: 11/11** planted violations detected, **0** false alarms on the
   compliant fixture, **6/6** fixtures preserved status integrity after verification.
 - **D. Live model behaviour: attempted, not obtained.** `evaluate_prompts.py --mode live` was
-  run against the real API and all four CVs returned `api_error` during a period of
-  unavailability (`cvs_scored: 0`, `cvs_failed: 4`). The attempt is recorded in
+  run against the real API and all four CVs returned `api_error`: HTTP 404,
+  `models/gemini-2.5-flash-lite is no longer available to new users`. A `GEMINI_MODEL` override
+  left from working around an earlier 503 named a retired model, so no call reached a model and
+  the result says nothing about prompt compliance. The attempt is recorded in
   `outputs/prompt_evaluation.json` rather than lost, because that script records a per-CV
-  failure and continues; it still yields no accuracy figures, so the measurement has to be
-  repeated when the API is available.
+  failure and continues. Repeat with `GEMINI_MODEL` unset.
 
 ## Limitations
 

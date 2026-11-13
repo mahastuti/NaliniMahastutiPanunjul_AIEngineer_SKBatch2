@@ -163,11 +163,11 @@ Three measured evaluations; all figures are actual script output from this envir
 
 **Prompt A/B** (`scripts/compare_extraction_prompts.py`): both extraction versions pass every required-rule check and contain **3/3** injection probes under an identical configuration; `extraction-v2` costs 986 more characters of system prompt. No quality claim is made offline.
 
-Extraction accuracy against real Gemini is **still not measured**: `evaluate_prompts.py --mode live` was run and all four CVs returned `api_error` during a period of API unavailability (recorded in `outputs/prompt_evaluation.json` as `cvs_scored: 0`). The measurement has to be repeated when the API is available. Full discussion: `docs/evaluation.md`, `docs/prompt_engineering.md`.
+Extraction accuracy against real Gemini is **still not measured**: `evaluate_prompts.py --mode live` was run and all four CVs returned `api_error` — HTTP 404, a `GEMINI_MODEL` override pointing at a model name Google has retired, so no call reached a model. The measurement has to be repeated with `GEMINI_MODEL` unset. Full discussion: `docs/evaluation.md`, `docs/prompt_engineering.md`.
 
 ## 14. Known Limitations
 
-- **Live Gemini extraction accuracy is unmeasured.** Live integration does work — three of four CVs were screened end to end against the real API — and the HTTP 400 schema bug, a retired model name (404) and 503 spikes were all found that way. But integration working is not the same as extraction being accurate, and the accuracy run itself returned `api_error` on all four CVs.
+- **Live Gemini extraction accuracy is unmeasured.** Live integration does work — three of four CVs were screened end to end against the real API — and the HTTP 400 schema bug, a retired model name (404) and 503 spikes were all found that way. But integration working is not the same as extraction being accurate, and the accuracy run itself failed on all four CVs with a 404 caused by a stale `GEMINI_MODEL` override, not by the model's behaviour.
 - `extraction-v2` is a hypothesis, not an improvement: it has not been compared against v1 on real model output, which is why `extraction-v1` remains the default.
 - Offline prompt metrics measure the templates and this system's enforcement, not how well Gemini follows them.
 - Tiny, author-written evaluation sets — regression checks, not a benchmark.

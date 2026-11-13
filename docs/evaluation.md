@@ -119,11 +119,19 @@ reported as measured rather than retried away: a transient-dependency failure ra
 property of a system that calls a hosted model, and the retry policy
 (`MAX_TRANSIENT_RETRIES = 3`, exponential backoff) had already been exhausted.
 
-**Live extraction accuracy: attempted, not obtained.** `evaluate_prompts.py --mode live` was run
-and all four CVs returned `api_error` (`cvs_scored: 0`, `cvs_failed: 4` in
-`outputs/prompt_evaluation.json`) during a period of API unavailability. The run is recorded
-rather than lost, which is the point of the per-CV error handling in that script, but it yields
-no accuracy figures. The measurement still has to be repeated when the API is available.
+**Live extraction accuracy: attempted, not obtained — because of a misconfiguration, not the
+model.** `evaluate_prompts.py --mode live` was run and all four CVs returned `api_error`
+(`cvs_scored: 0`, `cvs_failed: 4` in `outputs/prompt_evaluation.json`). The recorded message
+identifies the cause exactly: HTTP 404, `models/gemini-2.5-flash-lite is no longer available to
+new users`. A `GEMINI_MODEL` override left over from working around an earlier 503 pointed at a
+retired model name, so every call failed before the model ever saw a CV. This says nothing about
+extraction quality, and the run must be repeated with `GEMINI_MODEL` unset or set to a current
+model.
+
+The episode is also the clearest argument for keeping the service's own message rather than only
+an error code: `api_error` alone would have suggested an overloaded API and a pointless wait,
+while the message named a configuration fault that no amount of retrying would fix. Failed
+pipeline runs in `evaluate.py` now record `error_message` for the same reason.
 
 **Prompt level** (summary; full detail in `docs/prompt_engineering.md`) — construction checks
 **14/14**, planted narrative violations detected **11/11** with **0** false alarms, status
