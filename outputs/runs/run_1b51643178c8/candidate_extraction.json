@@ -1,0 +1,143 @@
+{
+  "run_id": "run_1b51643178c8",
+  "mode": "mock",
+  "provenance": {
+    "profile_source": "mock_canned",
+    "model": null,
+    "extraction_prompt_version": null,
+    "narrative_source": "mock_canned",
+    "recommendation_prompt_version": "recommendation-v1",
+    "matching_source": "deterministic_rules",
+    "grounded_in_cv_text": true,
+    "human_verified": false
+  },
+  "profile": {
+    "full_name": "Dewi Contoh",
+    "education": [
+      {
+        "institution": "Universitas Contoh",
+        "degree": "Bachelor of Statistics",
+        "degree_level": "bachelor",
+        "field_of_study": "Statistics",
+        "start_date": "2015",
+        "end_date": "2019",
+        "in_progress": false,
+        "evidence": [
+          "Bachelor of Statistics - Universitas Contoh | 2015 - 2019"
+        ]
+      }
+    ],
+    "work_experience": [
+      {
+        "company": "PT Contoh Analitika",
+        "title": "Data Analyst",
+        "start_date": "2021-01",
+        "end_date": "2024-03",
+        "is_current": false,
+        "responsibilities": [
+          "Built SQL-based dashboards in Tableau for weekly sales reporting.",
+          "Automated weekly reports with Python (pandas).",
+          "Forecasted product demand with ARIMA models."
+        ],
+        "technologies": [
+          "SQL",
+          "Tableau",
+          "Python",
+          "pandas",
+          "ARIMA"
+        ],
+        "evidence": [
+          "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024",
+          "Built SQL-based dashboards in Tableau for weekly sales reporting.",
+          "Automated weekly reports with Python (pandas), saving about 6 hours per week.",
+          "Forecasted product demand with ARIMA models."
+        ]
+      },
+      {
+        "company": "Universitas Contoh",
+        "title": "Research Assistant",
+        "start_date": "2019",
+        "end_date": "2020",
+        "is_current": false,
+        "responsibilities": [
+          "Cleaned survey datasets in R and prepared descriptive statistics."
+        ],
+        "technologies": [
+          "R"
+        ],
+        "evidence": [
+          "Research Assistant - Universitas Contoh | 2019 - 2020",
+          "Cleaned survey datasets in R and prepared descriptive statistics."
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "name": "Python",
+        "evidence": [
+          "Python, SQL, R, Tableau, Microsoft Excel"
+        ]
+      },
+      {
+        "name": "SQL",
+        "evidence": [
+          "Python, SQL, R, Tableau, Microsoft Excel"
+        ]
+      },
+      {
+        "name": "R",
+        "evidence": [
+          "Python, SQL, R, Tableau, Microsoft Excel"
+        ]
+      },
+      {
+        "name": "Tableau",
+        "evidence": [
+          "Python, SQL, R, Tableau, Microsoft Excel"
+        ]
+      },
+      {
+        "name": "Microsoft Excel",
+        "evidence": [
+          "Python, SQL, R, Tableau, Microsoft Excel"
+        ]
+      }
+    ],
+    "projects": [
+      {
+        "name": "Retail Demand Forecasting",
+        "description": "Time series forecasting project comparing ARIMA and Prophet on public retail data.",
+        "technologies": [
+          "ARIMA",
+          "Prophet"
+        ],
+        "evidence": [
+          "Retail Demand Forecasting - Time series forecasting project comparing ARIMA and Prophet on public retail data."
+        ]
+      }
+    ],
+    "certifications": [
+      {
+        "name": "Google Data Analytics Certificate",
+        "issuer": "Google",
+        "date": "2022",
+        "evidence": [
+          "Google Data Analytics Certificate (2022)"
+        ]
+      }
+    ]
+  },
+  "extraction_caveats": [
+    {
+      "code": "llm_extraction_unverified",
+      "severity": "warning",
+      "message": "the profile was produced by an automated extractor and has not been verified by a human; compare it with the original cv."
+    },
+    {
+      "code": "mock_mode",
+      "severity": "warning",
+      "message": "MOCK MODE: this profile is a hard-coded demo fixture, not the output of any model. it only matches the bundled synthetic sample cv."
+    }
+  ],
+  "notice": "every item above carries verbatim evidence quotes that were found in the cv text. items whose quotes could not be found were dropped before this file was written and are listed in extraction_caveats."
+}

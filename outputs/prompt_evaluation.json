@@ -11,6 +11,15 @@
       "temperature": 0.0,
       "schema": "CandidateProfile"
     },
+    "extraction-v2": {
+      "purpose": "extract structured candidate information from raw cv text (variant: explicit worked counter-examples and a per-item evidence checklist)",
+      "input_variables": [
+        "cv_text",
+        "validation_feedback"
+      ],
+      "temperature": 0.0,
+      "schema": "CandidateProfile"
+    },
     "recommendation-v1": {
       "purpose": "explain deterministic matching results as an evidence-based narrative",
       "input_variables": [

@@ -83,3 +83,80 @@ def test_strictness_still_enforced_on_our_side():
                "skills": [], "projects": [], "certifications": []}
     with pytest.raises(ValidationError):
         CandidateProfile.model_validate(payload)
+
+
+# ---------------------------------------------------------------- call accounting
+
+
+class _Usage:
+    prompt_token_count = 1200
+    candidates_token_count = 340
+    total_token_count = 1540
+
+
+class _Response:
+    def __init__(self, text: str, usage=None):
+        self.text = text
+        self.usage_metadata = usage
+
+
+class _Models:
+    def __init__(self, responses):
+        self._responses = list(responses)
+        self.calls = 0
+
+    def generate_content(self, **kwargs):
+        self.calls += 1
+        return self._responses.pop(0)
+
+
+class _FakeClient:
+    def __init__(self, responses):
+        self.models = _Models(responses)
+
+
+_VALID = NarrativeReport(
+    candidate_summary="s", confirmed_strengths=[], requirement_explanations=[],
+    potential_gaps=[], uncertainties=[], reviewer_questions=[],
+).model_dump_json()
+
+
+def _generate(responses, stats):
+    from src.gemini_client import generate_structured
+    from src.schemas import ScreeningError
+
+    return generate_structured(
+        client=_FakeClient(responses), model="m",
+        render=lambda feedback: ("sys", "user"), schema=NarrativeReport,
+        temperature=0.0, error_cls=ScreeningError, stats=stats,
+    )
+
+
+def test_reported_token_usage_is_recorded(monkeypatch):
+    from src.schemas import CallStats
+
+    stats = CallStats()
+    _generate([_Response(_VALID, _Usage())], stats)
+    assert stats.attempts == 1 and stats.retries == 0
+    assert stats.tokens.source == "api_reported"
+    assert stats.tokens.total_tokens == 1540
+
+
+def test_missing_token_usage_is_reported_as_unavailable_not_zero():
+    from src.schemas import CallStats
+
+    stats = CallStats()
+    _generate([_Response(_VALID)], stats)
+    assert stats.tokens.source == "unavailable"
+    assert stats.tokens.total_tokens is None
+
+
+def test_a_schema_retry_is_counted_with_its_reason(monkeypatch):
+    from src import gemini_client
+    from src.schemas import CallStats
+
+    monkeypatch.setattr(gemini_client, "RETRY_DELAY_S", 0)
+    stats = CallStats()
+    _generate([_Response("{not json"), _Response(_VALID, _Usage())], stats)
+    assert stats.attempts == 2 and stats.retries == 1
+    assert stats.retry_reasons == ["schema_validation_failed"]

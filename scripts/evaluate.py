@@ -13,6 +13,7 @@ usage: python scripts/evaluate.py [--mode mock|live] [--out outputs/evaluation_r
 """
 
 import argparse
+import csv
 import json
 import sys
 import time
@@ -54,7 +55,14 @@ def eval_matching() -> dict:
             if predicted.get(r) in STATUSES:
                 confusion[e][predicted[r]] += 1
         exact_cases += not mismatches
-        case_results.append({"case": case["name"], "signal": rec.signal, "mismatches": mismatches})
+        case_results.append({
+            "case": case["name"],
+            "signal": rec.signal,
+            "n_labels": len(expected),
+            "n_correct": len(expected) - len(mismatches),
+            "exact_match": not mismatches,
+            "mismatches": mismatches,
+        })
 
     per_status = {}
     for s in STATUSES:
@@ -183,10 +191,107 @@ def eval_pipeline_reliability(mode: str) -> dict:
 # ---------------------------------------------------------------- main
 
 
+# ---------------------------------------------------------------- per-case csv
+
+
+CSV_COLUMNS = ["section", "case", "metric", "value", "expected", "passed"]
+
+
+def write_csv(report: dict, path: Path) -> Path:
+    """flatten the report into one row per evaluated case.
+
+    the json report is the full record; this file exists so the per-case results can be
+    sorted, filtered and pasted into a table without a json parser. every row comes from
+    the same run that produced the json — nothing here is re-derived by hand.
+    """
+    rows: list[dict] = []
+
+    for case in report["matching_engine"]["cases"]:
+        rows.append({
+            "section": "matching", "case": case["case"],
+            "metric": "requirement_labels_correct",
+            "value": f"{case['n_correct']}/{case['n_labels']}",
+            "expected": f"{case['n_labels']}/{case['n_labels']}",
+            "passed": case["exact_match"],
+        })
+        rows.append({
+            "section": "matching", "case": case["case"], "metric": "signal",
+            "value": case["signal"], "expected": "", "passed": "",
+        })
+
+    for fixture in report["validation_and_grounding"]["fixtures"]:
+        rows.append({
+            "section": "validation", "case": fixture["fixture"],
+            "metric": "schema_valid", "value": fixture["schema_valid"],
+            "expected": fixture["schema_valid"] if fixture["validation_as_expected"] else "other",
+            "passed": fixture["validation_as_expected"],
+        })
+        if "grounding_issues_reported" in fixture:
+            rows.append({
+                "section": "grounding", "case": fixture["fixture"],
+                "metric": "grounding_issues_reported",
+                "value": fixture["grounding_issues_reported"], "expected": "", "passed": "",
+            })
+
+    for run in report["pipeline_reliability"]["runs"]:
+        rows.append({
+            "section": "pipeline", "case": Path(run["cv"]).name, "metric": "end_to_end_success",
+            "value": run["ok"], "expected": True, "passed": run["ok"],
+        })
+        rows.append({
+            "section": "pipeline", "case": Path(run["cv"]).name, "metric": "seconds",
+            "value": run["seconds"], "expected": "", "passed": "",
+        })
+        rows.append({
+            "section": "pipeline", "case": Path(run["cv"]).name, "metric": "signal",
+            "value": run["signal"], "expected": "", "passed": "",
+        })
+
+    for case in report["pipeline_reliability"]["error_paths"]:
+        rows.append({
+            "section": "error_handling", "case": case["case"], "metric": "error_code",
+            "value": case["got"], "expected": case["case"],
+            "passed": case["structured_error"],
+        })
+
+    matching = report["matching_engine"]
+    summary = [
+        ("matching", "requirement_level_accuracy", matching["requirement_level_accuracy"]),
+        ("matching", "exact_match_cases",
+         f"{matching['exact_match_cases']}/{matching['n_cases']}"),
+        ("validation", "validation_decisions_correct",
+         report["validation_and_grounding"]["validation_decisions_correct"]),
+        ("grounding", "hallucination_containment_rate",
+         report["validation_and_grounding"]["hallucination_containment_rate"]),
+        ("grounding", "genuine_retention_rate",
+         report["validation_and_grounding"]["genuine_retention_rate"]),
+        ("pipeline", "success_rate", report["pipeline_reliability"]["success_rate"]),
+        ("pipeline", "mean_seconds", report["pipeline_reliability"]["mean_seconds"]),
+        ("error_handling", "error_paths_correct",
+         report["pipeline_reliability"]["error_paths_correct"]),
+    ]
+    for section, metric, value in summary:
+        rows.append({"section": section, "case": "ALL", "metric": metric,
+                     "value": value, "expected": "", "passed": ""})
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=CSV_COLUMNS)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
 def main(argv: list[str] | None = None) -> int:
+    # live mode reads GEMINI_API_KEY from .env, exactly like the pipeline cli does
+    from dotenv import load_dotenv
+
+    load_dotenv()
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["mock", "live"], default="mock")
     parser.add_argument("--out", type=Path, default=ROOT / "outputs/evaluation_report.json")
+    parser.add_argument("--csv", type=Path, default=ROOT / "outputs/evaluation_results.csv",
+                        help="per-case results, flattened from the same run")
     args = parser.parse_args(argv)
 
     report = {
@@ -201,7 +306,7 @@ def main(argv: list[str] | None = None) -> int:
                       "is a fixture, so scoring it here would be circular.",
         },
         "limitations": [
-            "tiny hand-made dataset (4 matching cases, 6 simulated outputs, 3 synthetic cvs); results show behavior on covered scenarios, not general performance.",
+            "tiny hand-made dataset (5 matching cases, 6 simulated outputs, 4 synthetic cvs); results show behavior on covered scenarios, not general performance.",
             "ground truth was written by the same author as the rules, so matching metrics are regression checks, not an independent benchmark.",
             "simulated llm outputs test this system's defenses, not gemini's real error distribution.",
         ],
@@ -222,7 +327,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"pipeline: success {r['success_rate']}, mean {r['mean_seconds']}s, "
           f"error paths {r['error_paths_correct']}")
     print("extraction quality: measured by scripts/evaluate_prompts.py --mode live")
+    csv_path = write_csv(report, args.csv)
     print(f"report written to {args.out}")
+    print(f"per-case csv written to {csv_path}")
     return 0
 
 

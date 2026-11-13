@@ -24,6 +24,16 @@ from src.text_utils import contains_term, normalize_for_match
 
 _LEVEL_RANK = {"high_school": 1, "diploma": 2, "bachelor": 3, "master": 4, "doctorate": 5}
 
+
+def highest_degree_level(levels) -> str | None:
+    """the most advanced of the given degree levels, by rank rather than alphabetically.
+
+    sorting the strings would make "master" lose to "doctorate" but beat "high_school"
+    only by luck; evaluation code needs the real ordering.
+    """
+    ranked = [lvl for lvl in levels if lvl in _LEVEL_RANK]
+    return max(ranked, key=lambda lvl: _LEVEL_RANK[lvl], default=None)
+
 # ---------------------------------------------------------------- job description parsing
 
 _MANDATORY_HEADING = re.compile(r"^(requirements?|qualifications?|must[- ]have|required|what you.?ll need)\b", re.I)

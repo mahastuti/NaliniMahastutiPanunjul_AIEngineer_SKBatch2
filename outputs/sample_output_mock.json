@@ -480,6 +480,102 @@
       "Ask the candidate to clarify: Google Cloud certification"
     ]
   },
+  "trace": {
+    "run_id": "run_5d338790752f",
+    "started_at": "2026-11-12T19:27:19+00:00",
+    "pipeline_version": "1.1.0",
+    "mode": "mock",
+    "model": null,
+    "extraction_prompt_version": null,
+    "recommendation_prompt_version": "recommendation-v1",
+    "stages": [
+      {
+        "stage": "job_parsing",
+        "status": "ok",
+        "duration_ms": 0.503,
+        "detail": "7 requirements parsed",
+        "error_code": null,
+        "error_category": null,
+        "retries": 0
+      },
+      {
+        "stage": "document_processing",
+        "status": "ok",
+        "duration_ms": 0.003,
+        "detail": "2410 bytes received",
+        "error_code": null,
+        "error_category": null,
+        "retries": 0
+      },
+      {
+        "stage": "text_extraction",
+        "status": "ok",
+        "duration_ms": 7.816,
+        "detail": "1 pages, 829 characters",
+        "error_code": null,
+        "error_category": null,
+        "retries": 0
+      },
+      {
+        "stage": "llm_extraction",
+        "status": "ok",
+        "duration_ms": 0.519,
+        "detail": "source=mock_canned",
+        "error_code": null,
+        "error_category": null,
+        "retries": 0
+      },
+      {
+        "stage": "schema_validation",
+        "status": "ok",
+        "duration_ms": 0.0,
+        "detail": "CandidateProfile validated (strict: unknown fields rejected, dates checked)",
+        "error_code": null,
+        "error_category": null,
+        "retries": 0
+      },
+      {
+        "stage": "grounding",
+        "status": "ok",
+        "duration_ms": 0.0,
+        "detail": "0 items dropped or trimmed for unverifiable evidence",
+        "error_code": null,
+        "error_category": null,
+        "retries": 0
+      },
+      {
+        "stage": "matching",
+        "status": "ok",
+        "duration_ms": 0.781,
+        "detail": "signal=partial_support",
+        "error_code": null,
+        "error_category": null,
+        "retries": 0
+      },
+      {
+        "stage": "recommendation",
+        "status": "ok",
+        "duration_ms": 0.739,
+        "detail": "1 violations corrected",
+        "error_code": null,
+        "error_category": null,
+        "retries": 0
+      }
+    ],
+    "total_duration_ms": 11.203,
+    "retry_total": 0,
+    "error_categories": [],
+    "token_usage": {
+      "prompt_tokens": null,
+      "response_tokens": null,
+      "total_tokens": null,
+      "source": "unavailable"
+    },
+    "outcome": "success",
+    "notes": [
+      "this trace records observable processing steps only: no cv text, no candidate data, no credentials, and no model reasoning."
+    ]
+  },
   "notices": [
     "llm output is not verified fact: every extracted item carries evidence quotes that were checked against the cv text, but a human must confirm them.",
     "this is decision support only. a human reviewer must verify the extracted data against the original cv and make the hiring decision.",

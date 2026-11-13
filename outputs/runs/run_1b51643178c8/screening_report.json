@@ -1,0 +1,289 @@
+{
+  "run_id": "run_1b51643178c8",
+  "mode": "mock",
+  "provenance": {
+    "profile_source": "mock_canned",
+    "model": null,
+    "extraction_prompt_version": null,
+    "narrative_source": "mock_canned",
+    "recommendation_prompt_version": "recommendation-v1",
+    "matching_source": "deterministic_rules",
+    "grounded_in_cv_text": true,
+    "human_verified": false
+  },
+  "signal": "partial_support",
+  "summary": "4 of 5 mandatory requirements have supporting evidence in the cv; 0 not met; 1 unknown (not enough information). optional: 1 met, 0 not met, 1 unknown. this is an evidence summary for a human reviewer, not a hiring decision.",
+  "recommendation": {
+    "signal": "partial_support",
+    "summary": "4 of 5 mandatory requirements have supporting evidence in the cv; 0 not met; 1 unknown (not enough information). optional: 1 met, 0 not met, 1 unknown. this is an evidence summary for a human reviewer, not a hiring decision.",
+    "mandatory_counts": {
+      "met": 4,
+      "not_met": 0,
+      "unknown": 1
+    },
+    "optional_counts": {
+      "met": 1,
+      "not_met": 0,
+      "unknown": 1
+    },
+    "assessments": [
+      {
+        "requirement_id": "R1",
+        "requirement_text": "3+ years of professional experience in data analysis",
+        "mandatory": true,
+        "status": "met",
+        "facts": [
+          "dated roles add up to at least 3.2 years (overlaps merged, year-only dates counted conservatively)."
+        ],
+        "interpretation": "counts all professional roles; whether they are relevant to this job is not assessed.",
+        "evidence": [
+          {
+            "section": "work_experience",
+            "quote": "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
+          },
+          {
+            "section": "work_experience",
+            "quote": "Research Assistant - Universitas Contoh | 2019 - 2020"
+          }
+        ]
+      },
+      {
+        "requirement_id": "R2",
+        "requirement_text": "Bachelor's degree",
+        "mandatory": true,
+        "status": "met",
+        "facts": [
+          "'Bachelor of Statistics' (bachelor) is listed as completed."
+        ],
+        "interpretation": "only the degree level is compared; field of study and institution are not assessed.",
+        "evidence": [
+          {
+            "section": "education",
+            "quote": "Bachelor of Statistics - Universitas Contoh | 2015 - 2019"
+          }
+        ]
+      },
+      {
+        "requirement_id": "R3",
+        "requirement_text": "Python and SQL proficiency",
+        "mandatory": true,
+        "status": "met",
+        "facts": [
+          "'Python' appears in: skills (Python), work_experience (Data Analyst at PT Contoh Analitika).",
+          "'SQL' appears in: skills (SQL), work_experience (Data Analyst at PT Contoh Analitika)."
+        ],
+        "interpretation": "a mention shows the term is claimed in the cv, not the depth of proficiency.",
+        "evidence": [
+          {
+            "section": "skills",
+            "quote": "Python, SQL, R, Tableau, Microsoft Excel"
+          },
+          {
+            "section": "work_experience",
+            "quote": "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
+          },
+          {
+            "section": "work_experience",
+            "quote": "Built SQL-based dashboards in Tableau for weekly sales reporting."
+          }
+        ]
+      },
+      {
+        "requirement_id": "R4",
+        "requirement_text": "Experience with Tableau or Power BI",
+        "mandatory": true,
+        "status": "met",
+        "facts": [
+          "'Tableau' appears in: skills (Tableau), work_experience (Data Analyst at PT Contoh Analitika)."
+        ],
+        "interpretation": "a mention shows the term is claimed in the cv, not the depth of proficiency.",
+        "evidence": [
+          {
+            "section": "skills",
+            "quote": "Python, SQL, R, Tableau, Microsoft Excel"
+          },
+          {
+            "section": "work_experience",
+            "quote": "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
+          },
+          {
+            "section": "work_experience",
+            "quote": "Built SQL-based dashboards in Tableau for weekly sales reporting."
+          }
+        ]
+      },
+      {
+        "requirement_id": "R5",
+        "requirement_text": "Experience deploying machine learning models with Docker",
+        "mandatory": true,
+        "status": "unknown",
+        "facts": [
+          "not found in the extracted cv data: 'deploying machine learning models', 'Docker'."
+        ],
+        "interpretation": "not finding a term is not evidence the candidate lacks it: wording may differ or the cv may omit it.",
+        "evidence": []
+      },
+      {
+        "requirement_id": "R6",
+        "requirement_text": "Time series forecasting",
+        "mandatory": false,
+        "status": "met",
+        "facts": [
+          "'Time series forecasting' appears in: projects (Retail Demand Forecasting)."
+        ],
+        "interpretation": "a mention shows the term is claimed in the cv, not the depth of proficiency.",
+        "evidence": [
+          {
+            "section": "projects",
+            "quote": "Retail Demand Forecasting - Time series forecasting project comparing ARIMA and Prophet on public retail data."
+          }
+        ]
+      },
+      {
+        "requirement_id": "R7",
+        "requirement_text": "Google Cloud certification",
+        "mandatory": false,
+        "status": "unknown",
+        "facts": [
+          "not found in certifications only: 'Google Cloud'."
+        ],
+        "interpretation": "not finding a term is not evidence the candidate lacks it: wording may differ or the cv may omit it.",
+        "evidence": []
+      }
+    ],
+    "data_gaps": [
+      "work_experience[1] ('Research Assistant') has year-only dates; durations are approximate."
+    ],
+    "caveats": [
+      {
+        "code": "llm_extraction_unverified",
+        "severity": "warning",
+        "message": "the profile was produced by an automated extractor and has not been verified by a human; compare it with the original cv."
+      },
+      {
+        "code": "keyword_matching",
+        "severity": "info",
+        "message": "requirement matching is keyword-based; synonyms and related skills are not recognised, so 'unknown' may hide a real match."
+      },
+      {
+        "code": "protected_attributes_excluded",
+        "severity": "info",
+        "message": "personal attributes (name, age, gender, nationality, photo, etc.) were not used in this comparison, and the extraction schema has no fields for protected attributes."
+      },
+      {
+        "code": "unassessed_requirements",
+        "severity": "warning",
+        "message": "mandatory requirements with insufficient information: R5. treat them as open questions, not negatives."
+      },
+      {
+        "code": "data_gap",
+        "severity": "info",
+        "message": "work_experience[1] ('Research Assistant') has year-only dates; durations are approximate."
+      },
+      {
+        "code": "mock_mode",
+        "severity": "warning",
+        "message": "MOCK MODE: this profile is a hard-coded demo fixture, not the output of any model. it only matches the bundled synthetic sample cv."
+      },
+      {
+        "code": "narrative_violation",
+        "severity": "warning",
+        "message": "MOCK MODE: this narrative was generated from a template, not by any model. it restates the deterministic matching result."
+      }
+    ],
+    "requires_human_review": true,
+    "is_final_decision": false,
+    "decision_notice": "this is decision support only. a human reviewer must verify the extracted data against the original cv and make the hiring decision."
+  },
+  "narrative": {
+    "candidate_summary": "Template summary generated without a model. The candidate's stated background is described in the extracted profile; no overall judgement is made here.",
+    "confirmed_strengths": [
+      "R1: 3+ years of professional experience in data analysis - supported by: dated roles add up to at least 3.2 years (overlaps merged, year-only dates counted conservatively).",
+      "R2: Bachelor's degree - supported by: 'Bachelor of Statistics' (bachelor) is listed as completed.",
+      "R3: Python and SQL proficiency - supported by: 'Python' appears in: skills (Python), work_experience (Data Analyst at PT Contoh Analitika).",
+      "R4: Experience with Tableau or Power BI - supported by: 'Tableau' appears in: skills (Tableau), work_experience (Data Analyst at PT Contoh Analitika).",
+      "R6: Time series forecasting - supported by: 'Time series forecasting' appears in: projects (Retail Demand Forecasting)."
+    ],
+    "requirement_explanations": [
+      {
+        "requirement_id": "R1",
+        "status_restated": "met",
+        "explanation": "dated roles add up to at least 3.2 years (overlaps merged, year-only dates counted conservatively). counts all professional roles; whether they are relevant to this job is not assessed.",
+        "evidence_quotes": [
+          "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024",
+          "Research Assistant - Universitas Contoh | 2019 - 2020"
+        ]
+      },
+      {
+        "requirement_id": "R2",
+        "status_restated": "met",
+        "explanation": "'Bachelor of Statistics' (bachelor) is listed as completed. only the degree level is compared; field of study and institution are not assessed.",
+        "evidence_quotes": [
+          "Bachelor of Statistics - Universitas Contoh | 2015 - 2019"
+        ]
+      },
+      {
+        "requirement_id": "R3",
+        "status_restated": "met",
+        "explanation": "'Python' appears in: skills (Python), work_experience (Data Analyst at PT Contoh Analitika). a mention shows the term is claimed in the cv, not the depth of proficiency.",
+        "evidence_quotes": [
+          "Python, SQL, R, Tableau, Microsoft Excel",
+          "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
+        ]
+      },
+      {
+        "requirement_id": "R4",
+        "status_restated": "met",
+        "explanation": "'Tableau' appears in: skills (Tableau), work_experience (Data Analyst at PT Contoh Analitika). a mention shows the term is claimed in the cv, not the depth of proficiency.",
+        "evidence_quotes": [
+          "Python, SQL, R, Tableau, Microsoft Excel",
+          "Data Analyst - PT Contoh Analitika | Jan 2021 - Mar 2024"
+        ]
+      },
+      {
+        "requirement_id": "R5",
+        "status_restated": "unknown",
+        "explanation": "not found in the extracted cv data: 'deploying machine learning models', 'Docker'. not finding a term is not evidence the candidate lacks it: wording may differ or the cv may omit it.",
+        "evidence_quotes": []
+      },
+      {
+        "requirement_id": "R6",
+        "status_restated": "met",
+        "explanation": "'Time series forecasting' appears in: projects (Retail Demand Forecasting). a mention shows the term is claimed in the cv, not the depth of proficiency.",
+        "evidence_quotes": [
+          "Retail Demand Forecasting - Time series forecasting project comparing ARIMA and Prophet on public retail data."
+        ]
+      },
+      {
+        "requirement_id": "R7",
+        "status_restated": "unknown",
+        "explanation": "not found in certifications only: 'Google Cloud'. not finding a term is not evidence the candidate lacks it: wording may differ or the cv may omit it.",
+        "evidence_quotes": []
+      }
+    ],
+    "potential_gaps": [],
+    "uncertainties": [
+      "R5: Experience deploying machine learning models with Docker - the cv does not provide enough information to decide.",
+      "R7: Google Cloud certification - the cv does not provide enough information to decide."
+    ],
+    "reviewer_questions": [
+      "Ask the candidate to clarify: Experience deploying machine learning models with Docker",
+      "Ask the candidate to clarify: Google Cloud certification"
+    ]
+  },
+  "human_review": {
+    "requires_human_review": true,
+    "is_final_decision": false,
+    "decision_notice": "this is decision support only. a human reviewer must verify the extracted data against the original cv and make the hiring decision.",
+    "open_questions": [
+      "R5",
+      "R7"
+    ],
+    "review_record_file": "review_record.json (written by src/review.py once a human reviews)"
+  },
+  "notices": [
+    "llm output is not verified fact: every extracted item carries evidence quotes that were checked against the cv text, but a human must confirm them.",
+    "this is decision support only. a human reviewer must verify the extracted data against the original cv and make the hiring decision.",
+    "the narrative is an llm explanation of the deterministic matching result; it was checked programmatically and cannot change any requirement status."
+  ]
+}

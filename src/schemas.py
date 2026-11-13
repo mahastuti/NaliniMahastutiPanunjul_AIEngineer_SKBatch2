@@ -1,9 +1,12 @@
 """pydantic schemas shared by every module in the screening pipeline."""
 
 import re
-from typing import Literal
+from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+# bumped whenever the pipeline's observable behaviour changes; recorded in every execution trace
+PIPELINE_VERSION: Final = "1.1.0"
 
 Mode = Literal["live", "mock"]
 DegreeLevel = Literal["high_school", "diploma", "bachelor", "master", "doctorate", "other"]
@@ -29,6 +32,27 @@ def _check_date(value: str | None) -> str | None:
     if value is not None and not _DATE_RE.match(value):
         raise ValueError("date must be YYYY-MM or YYYY")
     return value
+
+
+# ---------------------------------------------------------------- llm call accounting
+
+
+class TokenUsage(_Strict):
+    """measured usage as reported by the api; never estimated silently."""
+
+    prompt_tokens: int | None = None
+    response_tokens: int | None = None
+    total_tokens: int | None = None
+    source: Literal["api_reported", "unavailable"] = "unavailable"
+
+
+class CallStats(_Strict):
+    """what one llm call cost in attempts and tokens. filled by src/gemini_client.py."""
+
+    attempts: int = 0
+    retries: int = 0
+    retry_reasons: list[str] = Field(default_factory=list)
+    tokens: TokenUsage = Field(default_factory=TokenUsage)
 
 
 # ---------------------------------------------------------------- extraction
@@ -189,6 +213,91 @@ class NarrativeResult(_Strict):
     model: str | None
     prompt_version: str
     violations: list[str]  # prompt rules the model broke, caught by programmatic checks
+    call_stats: CallStats | None = None
+
+
+# ---------------------------------------------------------------- execution trace
+# observable processing steps only. no hidden model reasoning, no api key, no cv content:
+# the trace must be safe to store and share next to a result.
+
+
+StageName = Literal[
+    "job_parsing",
+    "document_processing",
+    "text_extraction",
+    "llm_extraction",
+    "schema_validation",
+    "grounding",
+    "matching",
+    "recommendation",
+]
+StageStatus = Literal["ok", "skipped", "error"]
+# coarse buckets so failures can be counted without parsing messages
+ErrorCategory = Literal["input_document", "configuration", "api", "model_output", "pipeline"]
+
+
+class StageTrace(_Strict):
+    stage: StageName
+    status: StageStatus
+    duration_ms: float
+    detail: str | None = None
+    error_code: str | None = None
+    error_category: ErrorCategory | None = None
+    retries: int = 0
+
+
+class ExecutionTrace(_Strict):
+    run_id: str  # random per run; carries no candidate or user information
+    started_at: str  # iso-8601 utc
+    pipeline_version: str
+    mode: Mode
+    model: str | None = None
+    extraction_prompt_version: str | None = None
+    recommendation_prompt_version: str | None = None
+    stages: list[StageTrace] = Field(default_factory=list)
+    total_duration_ms: float = 0.0
+    retry_total: int = 0
+    error_categories: list[ErrorCategory] = Field(default_factory=list)
+    token_usage: TokenUsage = Field(default_factory=TokenUsage)
+    outcome: Literal["success", "failed"] = "success"
+    notes: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------- human review
+# reviewer corrections are recorded BESIDE the ai output, never written into it.
+
+
+ReviewIssue = Literal[
+    "incorrect_extraction",
+    "unsupported_qualification",
+    "unverified_requirement",
+    "ambiguous_evidence",
+    "incorrect_matching",
+    "other",
+]
+
+
+class ReviewerCorrection(_Strict):
+    target: str  # where in the result, e.g. "profile.skills[2]" or "recommendation.assessments[R3]"
+    issue: ReviewIssue
+    reviewer_note: str
+    corrected_value: str | None = None  # what the reviewer says it should be; advisory only
+    reviewer_id: str | None = None  # pseudonymous handle; do not put personal data here
+    recorded_at: str
+
+
+class ReviewRecord(_Strict):
+    """append-only log of human judgement about one run."""
+
+    run_id: str
+    corrections: list[ReviewerCorrection] = Field(default_factory=list)
+    reviewer_decision: Literal["pending", "needs_more_info", "reviewed"] = "pending"
+    # typed so this record can never claim to have rewritten the model's output
+    ai_output_modified: Literal[False] = False
+    notice: str = (
+        "corrections are reviewer statements recorded alongside the original ai output. "
+        "the screening result itself is never altered, so the two can always be compared."
+    )
 
 
 # ---------------------------------------------------------------- pipeline
@@ -201,6 +310,7 @@ class ExtractionResult(_Strict):
     prompt_version: str | None
     grounding_issues: list[str]
     warnings: list[str]
+    call_stats: CallStats = Field(default_factory=CallStats)
 
 
 class Provenance(_Strict):
@@ -221,4 +331,5 @@ class ScreeningResult(_Strict):
     profile: CandidateProfile
     recommendation: Recommendation
     narrative: NarrativeReport | None = None
+    trace: ExecutionTrace
     notices: list[str]

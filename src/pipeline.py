@@ -11,8 +11,10 @@ from typing import Any
 from src.llm_extractor import extract_profile
 from src.narrative import generate_narrative
 from src.pdf_parser import extract_text
+from src.artifacts import write_failed_run, write_run_artifacts
 from src.recommendation import build_recommendation, parse_job_description
 from src.schemas import Caveat, Mode, Provenance, ScreeningError, ScreeningResult
+from src.tracing import TraceBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -40,18 +42,52 @@ def run_screening(
     today: date | None = None,
     client: Any | None = None,
     include_narrative: bool = False,
+    tracer: TraceBuilder | None = None,
 ) -> ScreeningResult:
-    """run the full flow in memory. nothing is written to disk and no cv text is logged."""
+    """run the full flow in memory. nothing is written to disk and no cv text is logged.
+
+    every stage is timed into an `ExecutionTrace` carried on the result. pass `tracer` to
+    keep a handle on the trace of a run that fails: the stages recorded before the failure
+    are still there, and the caller can call `tracer.finish("failed")`.
+    """
+    tracer = tracer or TraceBuilder(mode)
+
     # step 1: parse the job description first, so bad input fails before any api call
-    job = parse_job_description(job_description)
-    if not job.requirements:
-        raise PipelineError("no_requirements", " ".join(job.warnings))
+    with tracer.stage("job_parsing") as t:
+        job = parse_job_description(job_description)
+        if not job.requirements:
+            raise PipelineError("no_requirements", " ".join(job.warnings))
+        t["detail"] = f"{len(job.requirements)} requirements parsed"
 
     # step 2: pdf -> text (raises PDFParseError)
-    parsed = extract_text(pdf_bytes)
+    with tracer.stage("document_processing") as t:
+        t["detail"] = f"{len(pdf_bytes)} bytes received"
+    with tracer.stage("text_extraction") as t:
+        parsed = extract_text(pdf_bytes)
+        t["detail"] = f"{parsed.page_count} pages, {parsed.char_count} characters"
 
     # step 3: extraction + grounding (raises ExtractionError)
-    extraction = extract_profile(parsed.text, mode=mode, api_key=api_key, model=model, client=client)
+    with tracer.stage("llm_extraction") as t:
+        try:
+            extraction = extract_profile(
+                parsed.text, mode=mode, api_key=api_key, model=model, client=client
+            )
+        except ScreeningError as exc:
+            if exc.code == "invalid_output":
+                tracer.mark("schema_validation", "error", "response rejected by CandidateProfile")
+            raise
+        t["detail"] = f"source={'mock_canned' if mode == 'mock' else 'gemini_llm'}"
+    tracer.model = extraction.model
+    tracer.extraction_prompt_version = extraction.prompt_version
+    tracer.add_call("llm_extraction", extraction.call_stats)
+    tracer.mark(
+        "schema_validation", "ok",
+        "CandidateProfile validated (strict: unknown fields rejected, dates checked)",
+    )
+    tracer.mark(
+        "grounding", "ok",
+        f"{len(extraction.grounding_issues)} items dropped or trimmed for unverifiable evidence",
+    )
 
     # step 4: caveats that come from the process rather than from the profile
     extra: list[Caveat] = []
@@ -67,21 +103,31 @@ def run_screening(
         ))
 
     # step 5: deterministic comparison (never touched by an llm)
-    recommendation = build_recommendation(extraction.profile, job, today=today, extra_caveats=extra)
+    with tracer.stage("matching") as t:
+        recommendation = build_recommendation(
+            extraction.profile, job, today=today, extra_caveats=extra
+        )
+        t["detail"] = f"signal={recommendation.signal}"
 
     # step 6: optional llm narrative explaining — not altering — the result above
     narrative = None
     narrative_result = None
     if include_narrative:
-        narrative_result = generate_narrative(
-            extraction.profile, job, recommendation, parsed.text,
-            mode=mode, api_key=api_key, model=model, client=client,
-        )
+        with tracer.stage("recommendation") as t:
+            narrative_result = generate_narrative(
+                extraction.profile, job, recommendation, parsed.text,
+                mode=mode, api_key=api_key, model=model, client=client,
+            )
+            t["detail"] = f"{len(narrative_result.violations)} violations corrected"
+        tracer.recommendation_prompt_version = narrative_result.prompt_version
+        tracer.add_call("recommendation", narrative_result.call_stats)
         narrative = narrative_result.report
         for violation in narrative_result.violations:
             recommendation.caveats.append(
                 Caveat(code="narrative_violation", severity="warning", message=violation)
             )
+    else:
+        tracer.mark("recommendation", "skipped", "narrative not requested")
 
     logger.info(
         "screening done: mode=%s requirements=%d signal=%s narrative=%s",
@@ -111,6 +157,7 @@ def run_screening(
         profile=extraction.profile,
         recommendation=recommendation,
         narrative=narrative,
+        trace=tracer.finish("success"),
         notices=notices,
     )
 
@@ -131,22 +178,34 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--narrative", action="store_true",
                         help="also generate the llm narrative explanation (second prompt)")
     parser.add_argument("--out", type=Path, help="optional path to write the json result")
+    parser.add_argument("--runs-dir", type=Path, default=Path("outputs/runs"),
+                        help="where per-run artifact directories are created")
+    parser.add_argument("--no-artifacts", action="store_true",
+                        help="do not write the per-run artifact files")
     args = parser.parse_args(argv)
 
     if args.mode == "mock":
         print("MOCK MODE: canned demo output, no model is called.", file=sys.stderr)
+    tracer = TraceBuilder(args.mode)
     try:
         result = run_screening(
             pdf_bytes=args.cv.read_bytes(),
             job_description=args.jd.read_text(encoding="utf-8"),
             mode=args.mode,
             include_narrative=args.narrative,
+            tracer=tracer,
         )
     except (ScreeningError, OSError) as exc:
         code = getattr(exc, "code", type(exc).__name__)
         print(f"error [{code}]: {exc}", file=sys.stderr)
+        if not args.no_artifacts:
+            directory = write_failed_run(tracer.finish("failed"), code, str(exc), args.runs_dir)
+            print(f"trace written to {directory}", file=sys.stderr)
         return 1
 
+    if not args.no_artifacts:
+        directory = write_run_artifacts(result, args.runs_dir)
+        print(f"artifacts written to {directory}", file=sys.stderr)
     output = result.model_dump_json(indent=2)
     if args.out:
         args.out.write_text(output + "\n", encoding="utf-8")

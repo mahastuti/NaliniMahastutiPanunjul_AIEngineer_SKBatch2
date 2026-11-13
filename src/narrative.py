@@ -23,6 +23,7 @@ from src.prompts import (
     render_recommendation_prompt,
 )
 from src.schemas import (
+    CallStats,
     CandidateProfile,
     JobDescription,
     Mode,
@@ -82,11 +83,12 @@ def generate_narrative(
     client: Any | None = None,
 ) -> NarrativeResult:
     """produce a verified narrative. `client` allows injection in tests."""
+    stats = CallStats()
     if mode == "mock":
         raw, model_name = _mock_narrative(recommendation), None
     elif mode == "live":
         model_name = resolve_model(model)
-        raw = _generate_live(profile, job, recommendation, model_name, api_key, client)
+        raw = _generate_live(profile, job, recommendation, model_name, api_key, client, stats)
     else:
         raise NarrativeError("invalid_mode", f"unknown mode: {mode!r}")
 
@@ -100,6 +102,7 @@ def generate_narrative(
         model=model_name,
         prompt_version=RECOMMENDATION_PROMPT_VERSION,
         violations=violations,
+        call_stats=stats,
     )
 
 
@@ -239,6 +242,7 @@ def _generate_live(
     model: str,
     api_key: str | None,
     client: Any | None,
+    stats: CallStats | None = None,
 ) -> NarrativeReport:
     if client is None:
         client = build_client(api_key, NarrativeError)
@@ -269,6 +273,7 @@ def _generate_live(
         schema=NarrativeReport,
         temperature=RECOMMENDATION_TEMPERATURE,
         error_cls=NarrativeError,
+        stats=stats,
     )
 
 

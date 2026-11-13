@@ -10,6 +10,7 @@ from src.prompts import (
     render_extraction_prompt,
 )
 from src.schemas import (
+    CallStats,
     CandidateProfile,
     Certification,
     Education,
@@ -44,15 +45,21 @@ def extract_profile(
     api_key: str | None = None,
     model: str | None = None,
     client: Any | None = None,
+    prompt_version: str = EXTRACTION_PROMPT_VERSION,
 ) -> ExtractionResult:
-    """extract a profile and ground it in the cv text. `client` allows injection in tests."""
+    """extract a profile and ground it in the cv text. `client` allows injection in tests.
+
+    `prompt_version` selects an extraction prompt variant; the chosen version is recorded
+    on the result so an evaluation run can always say which prompt produced it.
+    """
+    stats = CallStats()
     if mode == "mock":
         raw = _mock_profile()
         model_name = None
         warnings = [MOCK_LABEL]
     elif mode == "live":
         model_name = resolve_model(model)
-        raw = _extract_live(cv_text, model_name, api_key, client)
+        raw = _extract_live(cv_text, model_name, api_key, client, stats, prompt_version)
         warnings = []
     else:
         raise ExtractionError("invalid_mode", f"unknown mode: {mode!r}")
@@ -62,9 +69,10 @@ def extract_profile(
         profile=profile,
         mode=mode,
         model=model_name,
-        prompt_version=EXTRACTION_PROMPT_VERSION if mode == "live" else None,
+        prompt_version=prompt_version if mode == "live" else None,
         grounding_issues=issues,
         warnings=warnings,
+        call_stats=stats,
     )
 
 
@@ -109,17 +117,20 @@ def ground_profile(profile: CandidateProfile, cv_text: str) -> tuple[CandidatePr
 
 
 def _extract_live(
-    cv_text: str, model: str, api_key: str | None, client: Any | None
+    cv_text: str, model: str, api_key: str | None, client: Any | None,
+    stats: CallStats | None = None,
+    prompt_version: str = EXTRACTION_PROMPT_VERSION,
 ) -> CandidateProfile:
     if client is None:
         client = build_client(api_key, ExtractionError)
     return generate_structured(
         client=client,
         model=model,
-        render=lambda feedback: render_extraction_prompt(cv_text, feedback),
+        render=lambda feedback: render_extraction_prompt(cv_text, feedback, prompt_version),
         schema=CandidateProfile,
         temperature=EXTRACTION_TEMPERATURE,
         error_cls=ExtractionError,
+        stats=stats,
     )
 
 

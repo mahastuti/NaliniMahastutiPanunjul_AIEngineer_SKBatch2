@@ -7,23 +7,87 @@
       "profile": {
         "full_name": "Kandidat Penuh",
         "education": [
-          {"institution": "Universitas Fiktif", "degree": "Bachelor of Statistics", "degree_level": "bachelor", "field_of_study": "Statistics", "start_date": "2014", "end_date": "2018", "in_progress": false, "evidence": ["Bachelor of Statistics"]}
+          {
+            "institution": "Universitas Fiktif",
+            "degree": "Bachelor of Statistics",
+            "degree_level": "bachelor",
+            "field_of_study": "Statistics",
+            "start_date": "2014",
+            "end_date": "2018",
+            "in_progress": false,
+            "evidence": [
+              "Bachelor of Statistics"
+            ]
+          }
         ],
         "work_experience": [
-          {"company": "PT Fiksi Data", "title": "Data Analyst", "start_date": "2019-01", "end_date": "2024-06", "is_current": false, "responsibilities": ["Deploying machine learning models with Docker for churn scoring."], "technologies": ["Python", "SQL", "Tableau", "Docker"], "evidence": ["Data Analyst at PT Fiksi Data"]}
+          {
+            "company": "PT Fiksi Data",
+            "title": "Data Analyst",
+            "start_date": "2019-01",
+            "end_date": "2024-06",
+            "is_current": false,
+            "responsibilities": [
+              "Deploying machine learning models with Docker for churn scoring."
+            ],
+            "technologies": [
+              "Python",
+              "SQL",
+              "Tableau",
+              "Docker"
+            ],
+            "evidence": [
+              "Data Analyst at PT Fiksi Data"
+            ]
+          }
         ],
         "skills": [
-          {"name": "Python", "evidence": ["Python"]},
-          {"name": "SQL", "evidence": ["SQL"]},
-          {"name": "Tableau", "evidence": ["Tableau"]},
-          {"name": "Time series forecasting", "evidence": ["Time series forecasting"]}
+          {
+            "name": "Python",
+            "evidence": [
+              "Python"
+            ]
+          },
+          {
+            "name": "SQL",
+            "evidence": [
+              "SQL"
+            ]
+          },
+          {
+            "name": "Tableau",
+            "evidence": [
+              "Tableau"
+            ]
+          },
+          {
+            "name": "Time series forecasting",
+            "evidence": [
+              "Time series forecasting"
+            ]
+          }
         ],
         "projects": [],
         "certifications": [
-          {"name": "Google Cloud Professional Data Engineer", "issuer": "Google", "date": "2023", "evidence": ["Google Cloud Professional Data Engineer"]}
+          {
+            "name": "Google Cloud Professional Data Engineer",
+            "issuer": "Google",
+            "date": "2023",
+            "evidence": [
+              "Google Cloud Professional Data Engineer"
+            ]
+          }
         ]
       },
-      "expected": {"R1": "met", "R2": "met", "R3": "met", "R4": "met", "R5": "met", "R6": "met", "R7": "met"}
+      "expected": {
+        "R1": "met",
+        "R2": "met",
+        "R3": "met",
+        "R4": "met",
+        "R5": "met",
+        "R6": "met",
+        "R7": "met"
+      }
     },
     {
       "name": "partially_matching_candidate",
@@ -31,19 +95,63 @@
       "profile": {
         "full_name": "Kandidat Sebagian",
         "education": [
-          {"institution": "Universitas Fiktif", "degree": "Diploma Statistika", "degree_level": "diploma", "field_of_study": null, "start_date": null, "end_date": "2020", "in_progress": false, "evidence": ["Diploma Statistika"]}
+          {
+            "institution": "Universitas Fiktif",
+            "degree": "Diploma Statistika",
+            "degree_level": "diploma",
+            "field_of_study": null,
+            "start_date": null,
+            "end_date": "2020",
+            "in_progress": false,
+            "evidence": [
+              "Diploma Statistika"
+            ]
+          }
         ],
         "work_experience": [
-          {"company": "PT Separuh Jalan", "title": "Junior Analyst", "start_date": "2023-01", "end_date": "2024-06", "is_current": false, "responsibilities": ["Weekly reporting in Excel."], "technologies": ["Microsoft Excel"], "evidence": ["Junior Analyst at PT Separuh Jalan"]}
+          {
+            "company": "PT Separuh Jalan",
+            "title": "Junior Analyst",
+            "start_date": "2023-01",
+            "end_date": "2024-06",
+            "is_current": false,
+            "responsibilities": [
+              "Weekly reporting in Excel."
+            ],
+            "technologies": [
+              "Microsoft Excel"
+            ],
+            "evidence": [
+              "Junior Analyst at PT Separuh Jalan"
+            ]
+          }
         ],
         "skills": [
-          {"name": "Python", "evidence": ["Python"]},
-          {"name": "SQL", "evidence": ["SQL"]}
+          {
+            "name": "Python",
+            "evidence": [
+              "Python"
+            ]
+          },
+          {
+            "name": "SQL",
+            "evidence": [
+              "SQL"
+            ]
+          }
         ],
         "projects": [],
         "certifications": []
       },
-      "expected": {"R1": "not_met", "R2": "not_met", "R3": "met", "R4": "unknown", "R5": "unknown", "R6": "unknown", "R7": "unknown"}
+      "expected": {
+        "R1": "not_met",
+        "R2": "not_met",
+        "R3": "met",
+        "R4": "unknown",
+        "R5": "unknown",
+        "R6": "unknown",
+        "R7": "unknown"
+      }
     },
     {
       "name": "insufficient_information_candidate",
@@ -53,12 +161,25 @@
         "education": [],
         "work_experience": [],
         "skills": [
-          {"name": "Python", "evidence": ["Python"]}
+          {
+            "name": "Python",
+            "evidence": [
+              "Python"
+            ]
+          }
         ],
         "projects": [],
         "certifications": []
       },
-      "expected": {"R1": "unknown", "R2": "unknown", "R3": "unknown", "R4": "unknown", "R5": "unknown", "R6": "unknown", "R7": "unknown"}
+      "expected": {
+        "R1": "unknown",
+        "R2": "unknown",
+        "R3": "unknown",
+        "R4": "unknown",
+        "R5": "unknown",
+        "R6": "unknown",
+        "R7": "unknown"
+      }
     },
     {
       "name": "undated_roles_block_not_met",
@@ -66,20 +187,150 @@
       "profile": {
         "full_name": "Kandidat Tanpa Tanggal",
         "education": [
-          {"institution": "Universitas Fiktif", "degree": "Sarjana Ekonomi", "degree_level": "bachelor", "field_of_study": null, "start_date": null, "end_date": "2019", "in_progress": false, "evidence": ["Sarjana Ekonomi"]}
+          {
+            "institution": "Universitas Fiktif",
+            "degree": "Sarjana Ekonomi",
+            "degree_level": "bachelor",
+            "field_of_study": null,
+            "start_date": null,
+            "end_date": "2019",
+            "in_progress": false,
+            "evidence": [
+              "Sarjana Ekonomi"
+            ]
+          }
         ],
         "work_experience": [
-          {"company": "PT Singkat", "title": "Analyst", "start_date": "2024-01", "end_date": "2024-06", "is_current": false, "responsibilities": [], "technologies": ["Tableau"], "evidence": ["Analyst at PT Singkat"]},
-          {"company": "CV Misteri", "title": "Staff", "start_date": null, "end_date": null, "is_current": null, "responsibilities": [], "technologies": [], "evidence": ["Staff at CV Misteri"]}
+          {
+            "company": "PT Singkat",
+            "title": "Analyst",
+            "start_date": "2024-01",
+            "end_date": "2024-06",
+            "is_current": false,
+            "responsibilities": [],
+            "technologies": [
+              "Tableau"
+            ],
+            "evidence": [
+              "Analyst at PT Singkat"
+            ]
+          },
+          {
+            "company": "CV Misteri",
+            "title": "Staff",
+            "start_date": null,
+            "end_date": null,
+            "is_current": null,
+            "responsibilities": [],
+            "technologies": [],
+            "evidence": [
+              "Staff at CV Misteri"
+            ]
+          }
         ],
         "skills": [
-          {"name": "Python", "evidence": ["Python"]},
-          {"name": "SQL", "evidence": ["SQL"]}
+          {
+            "name": "Python",
+            "evidence": [
+              "Python"
+            ]
+          },
+          {
+            "name": "SQL",
+            "evidence": [
+              "SQL"
+            ]
+          }
         ],
         "projects": [],
         "certifications": []
       },
-      "expected": {"R1": "unknown", "R2": "met", "R3": "met", "R4": "met", "R5": "unknown", "R6": "unknown", "R7": "unknown"}
+      "expected": {
+        "R1": "unknown",
+        "R2": "met",
+        "R3": "met",
+        "R4": "met",
+        "R5": "unknown",
+        "R6": "unknown",
+        "R7": "unknown"
+      }
+    },
+    {
+      "name": "irrelevant_experience_candidate",
+      "_note": "long, well-dated career in an unrelated field. the engine counts years without judging relevance (a documented limitation), so R1 is met while every job-specific requirement stays unknown. this case exists to pin that behaviour down: the limitation must be visible, not silently hidden behind a low signal.",
+      "job_description_file": "data/job_requirements/data_analyst.txt",
+      "profile": {
+        "full_name": "Bima Rekaan",
+        "education": [
+          {
+            "institution": "Sekolah Tinggi Kuliner Fiktif",
+            "degree": "Bachelor of Culinary Arts",
+            "degree_level": "bachelor",
+            "field_of_study": "Culinary Arts",
+            "start_date": "2012",
+            "end_date": "2016",
+            "in_progress": false,
+            "evidence": [
+              "Bachelor of Culinary Arts - Sekolah Tinggi Kuliner Fiktif | 2012 - 2016"
+            ]
+          }
+        ],
+        "work_experience": [
+          {
+            "company": "Restoran Fiktif",
+            "title": "Head Chef",
+            "start_date": "2018-01",
+            "end_date": "2024-06",
+            "is_current": false,
+            "responsibilities": [
+              "Managed kitchen staff and daily menu execution."
+            ],
+            "technologies": [],
+            "evidence": [
+              "Head Chef - Restoran Fiktif | Jan 2018 - Jun 2024"
+            ]
+          },
+          {
+            "company": "Katering Rekaan",
+            "title": "Sous Chef",
+            "start_date": "2016-02",
+            "end_date": "2017-12",
+            "is_current": false,
+            "responsibilities": [
+              "Prepared banquet menus for large events."
+            ],
+            "technologies": [],
+            "evidence": [
+              "Sous Chef - Katering Rekaan | Feb 2016 - Dec 2017"
+            ]
+          }
+        ],
+        "skills": [
+          {
+            "name": "Menu Planning",
+            "evidence": [
+              "Menu Planning"
+            ]
+          },
+          {
+            "name": "Food Safety",
+            "evidence": [
+              "Food Safety"
+            ]
+          }
+        ],
+        "projects": [],
+        "certifications": []
+      },
+      "expected": {
+        "R1": "met",
+        "R2": "met",
+        "R3": "unknown",
+        "R4": "unknown",
+        "R5": "unknown",
+        "R6": "unknown",
+        "R7": "unknown"
+      }
     }
   ]
 }

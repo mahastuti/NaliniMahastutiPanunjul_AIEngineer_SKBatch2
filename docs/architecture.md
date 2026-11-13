@@ -10,10 +10,13 @@
                                      + ground_profile()      (deterministic)          + verify_narrative()
  JD text  ──────────────────────────────────────────► parse_job_description()
 
-                 src/prompts.py       — the two versioned prompts (no business logic)
+                 src/prompts.py       — the versioned prompts (no business logic)
                  src/gemini_client.py — one gemini call path: structured output, retry, errors
                  src/schemas.py       — shared pydantic contracts for every arrow above
                  src/text_utils.py    — shared text normalisation (grounding + matching)
+                 src/tracing.py       — times every arrow above into an ExecutionTrace
+                 src/artifacts.py     — writes one run's results to outputs/runs/<run_id>/
+                 src/review.py        — records human corrections BESIDE the result
 ```
 
 Two LLM calls, both through `src/gemini_client.py`, both with structured output and temperature 0:
@@ -40,7 +43,9 @@ Validates bytes before parsing (empty, >5 MB, missing `%PDF` header), opens with
 The two versioned prompts, their input variables, temperatures (0.0 for reproducibility) and
 target schemas, plus `PROMPT_REGISTRY` for evaluation metadata and `wrap_untrusted()`, which
 wraps untrusted content in a delimiter block after stripping that delimiter from the content so
-it cannot close the block early. Full detail: `docs/prompts.md`.
+it cannot close the block early. Two extraction variants (`extraction-v1` default, `extraction-v2` under evaluation) share one
+renderer, so an a/b comparison changes the system prompt and nothing else.
+Full detail: `docs/prompt_engineering.md`.
 
 ### `src/gemini_client.py` — one call path
 Shared by both prompts so the retry and error policy exists once: builds the client from
@@ -86,6 +91,31 @@ No LLM here: matching is pure rules, so it is reproducible, testable, and immune
 ### `src/pipeline.py` — orchestration
 `run_screening()` wires the steps in order (JD parsed first so bad input fails before any API call), converts extraction warnings/grounding issues into caveats, flags injection-looking CV content, and returns one `ScreeningResult` with **provenance** (`gemini_llm` vs `mock_canned`, `human_verified: False`) so LLM output is never presented as verified fact. In-memory only; nothing persisted unless the caller writes it. Also exposes the CLI (`python -m src.pipeline`).
 
+### `src/tracing.py` — what the run did
+A `TraceBuilder` times each stage into an `ExecutionTrace` carried on every result: run id
+(random, so it identifies the run and not the candidate), pipeline and prompt versions, model,
+per-stage status and duration, retry counts with reasons, coarse error categories, and token
+usage **as reported by the api** — never estimated. A stage that raises is recorded before the
+exception continues upward, so a failed run still yields a usable trace. Three things are
+deliberately absent: cv text, credentials, and model reasoning.
+
+### `src/artifacts.py` — what the run produced
+Writes four files per run into `outputs/runs/<run_id>/`: `candidate_extraction.json` (what was
+read out of the cv and what was discarded), `requirement_matching.json` (one row per
+requirement: id, text, category, status, evidence, explanation, caveat), `screening_report.json`
+(the reviewer-facing summary with human-review flags) and `execution_trace.json`. A run id per
+directory means a new run never overwrites an older one. A failed run writes its trace alone —
+there is no result, and the pipeline never fabricates one.
+
+### `src/review.py` — what the human said
+Reviewer corrections are typed (`incorrect_extraction`, `unsupported_qualification`,
+`unverified_requirement`, `ambiguous_evidence`, `incorrect_matching`) and stored in a separate
+`ReviewRecord`, keyed by run id and by a validated path into the result
+(`profile.skills[2]`, `recommendation.assessments[R3]`). A correction pointing at something that
+does not exist is rejected when it is recorded. `review_view()` renders the ai output and the
+reviewer's objection side by side. The ai output is never modified — `ReviewRecord` is typed
+`ai_output_modified: Literal[False]` — so what the system produced stays auditable after review.
+
 ## Data flow guarantees
 
 1. Every recommendation statement traces back to evidence quotes that verifiably occur in the CV.
@@ -96,3 +126,6 @@ No LLM here: matching is pure rules, so it is reproducible, testable, and immune
 4. Provenance records, per result, which part came from a model, which prompt version, and that
    nothing is human-verified yet.
 5. The final artifact structurally requires human review.
+6. Every run is traceable: which stages ran, how long they took, how many retries the api
+   needed, and which prompt version and model produced the result.
+7. Human corrections never overwrite machine output; the two are stored separately and compared.

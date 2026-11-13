@@ -1,36 +1,56 @@
 {
-  "mode": "mock",
+  "mode": "live",
   "eval_date_fixed": "2026-11-12",
   "matching_engine": {
     "cases": [
       {
         "case": "fully_matching_candidate",
         "signal": "strong_support",
+        "n_labels": 7,
+        "n_correct": 7,
+        "exact_match": true,
         "mismatches": {}
       },
       {
         "case": "partially_matching_candidate",
         "signal": "mandatory_gap",
+        "n_labels": 7,
+        "n_correct": 7,
+        "exact_match": true,
         "mismatches": {}
       },
       {
         "case": "insufficient_information_candidate",
         "signal": "insufficient_information",
+        "n_labels": 7,
+        "n_correct": 7,
+        "exact_match": true,
         "mismatches": {}
       },
       {
         "case": "undated_roles_block_not_met",
         "signal": "partial_support",
+        "n_labels": 7,
+        "n_correct": 7,
+        "exact_match": true,
+        "mismatches": {}
+      },
+      {
+        "case": "irrelevant_experience_candidate",
+        "signal": "insufficient_information",
+        "n_labels": 7,
+        "n_correct": 7,
+        "exact_match": true,
         "mismatches": {}
       }
     ],
-    "n_cases": 4,
-    "exact_match_cases": 4,
+    "n_cases": 5,
+    "exact_match_cases": 5,
     "requirement_level_accuracy": 1.0,
-    "n_requirement_labels": 28,
+    "n_requirement_labels": 35,
     "per_status": {
       "met": {
-        "support": 11,
+        "support": 13,
         "recall": 1.0,
         "precision": 1.0
       },
@@ -40,14 +60,14 @@
         "precision": 1.0
       },
       "unknown": {
-        "support": 15,
+        "support": 20,
         "recall": 1.0,
         "precision": 1.0
       }
     },
     "confusion_expected_vs_predicted": {
       "met": {
-        "met": 11,
+        "met": 13,
         "not_met": 0,
         "unknown": 0
       },
@@ -59,7 +79,7 @@
       "unknown": {
         "met": 0,
         "not_met": 0,
-        "unknown": 15
+        "unknown": 20
       }
     }
   },
@@ -109,12 +129,12 @@
     "genuine_retention_rate": 1.0
   },
   "pipeline_reliability": {
-    "mode": "mock",
+    "mode": "live",
     "runs": [
       {
         "cv": "synthetic_cv_01_clean.pdf",
         "ok": true,
-        "seconds": 0.008,
+        "seconds": 13.987,
         "signal": "partial_support",
         "extracted_items_survived": 10,
         "requires_human_review": true
@@ -122,30 +142,28 @@
       {
         "cv": "synthetic_cv_02_ambiguous.pdf",
         "ok": true,
-        "seconds": 0.003,
+        "seconds": 8.844,
         "signal": "insufficient_information",
-        "extracted_items_survived": 0,
+        "extracted_items_survived": 6,
         "requires_human_review": true
       },
       {
         "cv": "synthetic_cv_03_sparse.pdf",
         "ok": true,
-        "seconds": 0.003,
+        "seconds": 11.605,
         "signal": "insufficient_information",
-        "extracted_items_survived": 0,
+        "extracted_items_survived": 2,
         "requires_human_review": true
       },
       {
         "cv": "synthetic_cv_04_injection.pdf",
-        "ok": true,
-        "seconds": 0.003,
-        "signal": "insufficient_information",
-        "extracted_items_survived": 0,
-        "requires_human_review": true
+        "ok": false,
+        "seconds": 2.308,
+        "error_code": "api_error"
       }
     ],
-    "success_rate": "4/4",
-    "mean_seconds": 0.004,
+    "success_rate": "3/4",
+    "mean_seconds": 9.186,
     "error_paths": [
       {
         "case": "not_a_pdf",
@@ -170,7 +188,7 @@
     "reason": "extraction quality depends on the prompt and the model; the mock profile is a fixture, so scoring it here would be circular."
   },
   "limitations": [
-    "tiny hand-made dataset (4 matching cases, 6 simulated outputs, 3 synthetic cvs); results show behavior on covered scenarios, not general performance.",
+    "tiny hand-made dataset (5 matching cases, 6 simulated outputs, 4 synthetic cvs); results show behavior on covered scenarios, not general performance.",
     "ground truth was written by the same author as the rules, so matching metrics are regression checks, not an independent benchmark.",
     "simulated llm outputs test this system's defenses, not gemini's real error distribution."
   ]

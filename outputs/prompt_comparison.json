@@ -1,0 +1,69 @@
+{
+  "mode": "mock",
+  "compared_versions": [
+    "extraction-v1",
+    "extraction-v2"
+  ],
+  "a_construction": {
+    "versions": [
+      {
+        "version": "extraction-v1",
+        "purpose": "extract structured candidate information from raw cv text",
+        "temperature": 0.0,
+        "target_schema": "CandidateProfile",
+        "input_variables": [
+          "cv_text",
+          "validation_feedback"
+        ],
+        "system_prompt_chars": 1715,
+        "user_prompt_chars": 67,
+        "required_rules_present": {
+          "forbids invention": true,
+          "requires verbatim evidence": true,
+          "forbids protected attributes": true,
+          "forbids scoring": true,
+          "treats cv as untrusted": true
+        },
+        "all_required_rules_present": true,
+        "data_blocks": 1,
+        "injection_probes_contained": "3/3"
+      },
+      {
+        "version": "extraction-v2",
+        "purpose": "extract structured candidate information from raw cv text (variant: explicit worked counter-examples and a per-item evidence checklist)",
+        "temperature": 0.0,
+        "target_schema": "CandidateProfile",
+        "input_variables": [
+          "cv_text",
+          "validation_feedback"
+        ],
+        "system_prompt_chars": 2701,
+        "user_prompt_chars": 67,
+        "required_rules_present": {
+          "forbids invention": true,
+          "requires verbatim evidence": true,
+          "forbids protected attributes": true,
+          "forbids scoring": true,
+          "treats cv as untrusted": true
+        },
+        "all_required_rules_present": true,
+        "data_blocks": 1,
+        "injection_probes_contained": "3/3"
+      }
+    ],
+    "controlled_configuration": true,
+    "controlled_configuration_detail": "same temperature, same response schema and same input variables in both arms, so the system prompt is the only variable.",
+    "system_prompt_size_delta_chars": 986,
+    "can_rank_extraction_quality": false,
+    "note": "construction checks only. they show both prompts are structurally valid and configured identically; they say nothing about which one extracts better. run --mode live for that."
+  },
+  "b_live_extraction_quality": {
+    "skipped": true,
+    "reason": "extraction quality can only be compared against the real api; run with --mode live and GEMINI_API_KEY set."
+  },
+  "limitations": [
+    "3 synthetic cvs written by the author of the prompts: a comparison on covered scenarios, not a benchmark.",
+    "temperature 0.0 reduces but does not remove run-to-run variation; use --repeats to see how stable a difference is.",
+    "the grounding layer runs in both arms, so both are measured after the same safety net; the difference is in how much the net had to catch."
+  ]
+}

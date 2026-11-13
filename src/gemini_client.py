@@ -14,14 +14,15 @@ from google.genai import errors as genai_errors
 from google.genai import types
 from pydantic import BaseModel, ValidationError
 
-from src.schemas import ScreeningError
+from src.schemas import CallStats, ScreeningError, TokenUsage
 
 logger = logging.getLogger(__name__)
 
 # model names get retired; override with GEMINI_MODEL in .env when the api says "no longer available".
-# gemini-2.5-flash was rejected (404) for a new account; this name comes from google's own error
-# message and has not been verified by a successful call from this repo.
-DEFAULT_MODEL = "gemini-3.8-flash"
+# history: gemini-2.5-flash returned 404 for a new account. gemini-3.5-flash is the name that
+# actually completed a live run from this repo (recorded in the result's provenance), so it is
+# the default. a model appearing in client.models.list() does not mean it is callable.
+DEFAULT_MODEL = "gemini-3.5-flash"
 MAX_ATTEMPTS = 2
 RETRY_DELAY_S = 1.5
 
@@ -96,6 +97,25 @@ def _describe_api_error(exc: genai_errors.APIError) -> str:
     return f"{head}: {detail}" if detail else f"{head}."
 
 
+def read_token_usage(response: Any) -> TokenUsage:
+    """token counts as reported by the api. absent on some responses and in fakes, so the
+    result says `unavailable` rather than guessing a number."""
+    meta = getattr(response, "usage_metadata", None)
+    if meta is None:
+        return TokenUsage()
+    prompt = getattr(meta, "prompt_token_count", None)
+    response_tokens = getattr(meta, "candidates_token_count", None)
+    total = getattr(meta, "total_token_count", None)
+    if prompt is None and response_tokens is None and total is None:
+        return TokenUsage()
+    return TokenUsage(
+        prompt_tokens=prompt,
+        response_tokens=response_tokens,
+        total_tokens=total,
+        source="api_reported",
+    )
+
+
 def summarize_validation_error(exc: ValidationError) -> str:
     """locations and error types only: error inputs may echo cv content."""
     parts = [f"{'.'.join(str(p) for p in e['loc'])} ({e['type']})" for e in exc.errors()[:5]]
@@ -110,10 +130,13 @@ def generate_structured(
     schema: type[T],
     temperature: float,
     error_cls: type[ScreeningError],
+    stats: CallStats | None = None,
 ) -> T:
     """call gemini and return a validated `schema` instance, or raise `error_cls`.
 
     error codes: api_error, empty_response, invalid_output.
+    `stats`, when given, is filled in with attempts, retries and reported token usage so
+    the caller can record them in an execution trace.
     """
     feedback: str | None = None
     last_error: ScreeningError | None = None
@@ -122,6 +145,9 @@ def generate_structured(
     for attempt in range(1, MAX_ATTEMPTS + 1):
         if attempt > 1:
             time.sleep(RETRY_DELAY_S)
+        if stats is not None:
+            stats.attempts = attempt
+            stats.retries = attempt - 1
         system, user = render(feedback)
         config = types.GenerateContentConfig(
             system_instruction=system,
@@ -136,15 +162,22 @@ def generate_structured(
             last_error = error_cls("api_error", _describe_api_error(exc))
             last_error.__cause__ = exc
             if retryable:
+                if stats is not None:
+                    stats.retry_reasons.append(f"api_error_http_{exc.code}")
                 continue
             raise last_error from exc
         except Exception as exc:  # network and sdk failures: surface, never swallow
             raise error_cls("api_error", f"gemini call failed: {type(exc).__name__}.") from exc
 
+        if stats is not None:
+            stats.tokens = read_token_usage(response)
+
         text = getattr(response, "text", None)
         if not text:
             last_error = error_cls("empty_response", "the model returned no text (possibly blocked).")
             feedback = None
+            if stats is not None:
+                stats.retry_reasons.append("empty_response")
             continue
         try:
             return schema.model_validate_json(text)
@@ -152,6 +185,8 @@ def generate_structured(
             feedback = summarize_validation_error(exc)
             last_error = error_cls("invalid_output", f"model output failed schema validation: {feedback}")
             last_error.__cause__ = exc
+            if stats is not None:
+                stats.retry_reasons.append("schema_validation_failed")
 
     assert last_error is not None
     raise last_error

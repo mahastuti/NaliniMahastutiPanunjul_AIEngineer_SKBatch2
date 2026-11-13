@@ -32,6 +32,7 @@ sys.path.insert(0, str(ROOT))
 from src.llm_extractor import extract_profile, ground_profile  # noqa: E402
 from src.narrative import verify_narrative  # noqa: E402
 from src.pdf_parser import extract_text  # noqa: E402
+from src.recommendation import highest_degree_level  # noqa: E402
 from src.prompts import (  # noqa: E402
     PROMPT_REGISTRY,
     render_extraction_prompt,
@@ -243,7 +244,7 @@ def eval_live(mode: str) -> dict:
             "skills": _prf(_norm(s.name for s in p.skills), _norm(gt["skills"])),
             "companies": _prf(_norm(w.company for w in p.work_experience), _norm(gt["companies"])),
             "certifications": _prf(_norm(c.name for c in p.certifications), _norm(gt["certifications"])),
-            "highest_degree_level_correct": max(levels, default=None) == gt["highest_degree_level"],
+            "highest_degree_level_correct": highest_degree_level(levels) == gt["highest_degree_level"],
             "items_dropped_by_grounding": len(result.grounding_issues),
         }
         if forbidden := gt.get("forbidden_terms"):
@@ -259,6 +260,10 @@ def eval_live(mode: str) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # live mode reads GEMINI_API_KEY from .env, exactly like the pipeline cli does
+    from dotenv import load_dotenv
+
+    load_dotenv()
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["mock", "live"], default="mock")
     parser.add_argument("--out", type=Path, default=ROOT / "outputs/prompt_evaluation.json")

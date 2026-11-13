@@ -17,7 +17,8 @@ from typing import Final
 
 # ---------------------------------------------------------------- versions
 
-EXTRACTION_PROMPT_VERSION: Final = "extraction-v1"
+EXTRACTION_PROMPT_VERSION: Final = "extraction-v1"  # default in production
+EXTRACTION_PROMPT_VERSION_V2: Final = "extraction-v2"  # candidate variant, compared in evaluation
 RECOMMENDATION_PROMPT_VERSION: Final = "recommendation-v1"
 
 # temperature 0.0 for both: low randomness keeps evaluation runs reproducible.
@@ -40,6 +41,14 @@ PROMPT_REGISTRY: Final[dict[str, PromptSpec]] = {
     EXTRACTION_PROMPT_VERSION: PromptSpec(
         version=EXTRACTION_PROMPT_VERSION,
         purpose="extract structured candidate information from raw cv text",
+        input_variables=("cv_text", "validation_feedback"),
+        temperature=EXTRACTION_TEMPERATURE,
+        structured_output_schema="CandidateProfile",
+    ),
+    EXTRACTION_PROMPT_VERSION_V2: PromptSpec(
+        version=EXTRACTION_PROMPT_VERSION_V2,
+        purpose="extract structured candidate information from raw cv text (variant: "
+                "explicit worked counter-examples and a per-item evidence checklist)",
         input_variables=("cv_text", "validation_feedback"),
         temperature=EXTRACTION_TEMPERATURE,
         structured_output_schema="CandidateProfile",
@@ -106,10 +115,57 @@ personal identifier allowed.
 """
 
 
-def render_extraction_prompt(cv_text: str, validation_feedback: str | None = None) -> tuple[str, str]:
-    """return (system_instruction, user_prompt) for the extraction call."""
+# ---------------------------------------------------------------- extraction v2 (variant)
+# hypothesis under test: v1 states its rules abstractly, and the two failure modes that
+# actually cost us items are (a) evidence quotes that paraphrase instead of copying, which
+# the grounding layer then drops, and (b) dates reconstructed from vague phrasing. v2 keeps
+# the same rules and the same schema, and adds worked counter-examples plus a per-item
+# check the model must run before emitting an item. the cost is a longer system prompt
+# (more input tokens per call). whether it actually helps is an empirical question:
+# scripts/compare_extraction_prompts.py --mode live measures both against the same cvs.
+
+EXTRACTION_SYSTEM_PROMPT_V2: Final = (
+    EXTRACTION_SYSTEM_PROMPT
+    + """
+Before you emit each item, check it:
+- Can you point to a span of the CV that contains your evidence quote CHARACTER FOR \
+CHARACTER? If you had to reword anything, the quote is wrong: copy the original line instead.
+- Is every date you are about to write printed in the CV? If you derived it, use null.
+- Would a reader of the CV alone agree this item is stated there? If not, drop the item.
+
+Worked counter-examples (all of these are WRONG):
+- CV says "several years in analytics" -> writing start_date "2019". Correct: both dates null.
+- CV says "Built dashboards in Tableau" -> evidence "Experienced with Tableau dashboards". \
+That is a paraphrase. Correct: quote "Built dashboards in Tableau".
+- CV lists "s.kom" -> writing degree_level "master". Correct: the level actually stated.
+- CV mentions a university email -> inferring a degree. Correct: no education item.
+- CV says "exposure to Docker" -> writing a Docker skill with no quote. Correct: quote the \
+line, or omit the skill.
+"""
+)
+
+EXTRACTION_SYSTEM_PROMPTS: Final[dict[str, str]] = {
+    EXTRACTION_PROMPT_VERSION: EXTRACTION_SYSTEM_PROMPT,
+    EXTRACTION_PROMPT_VERSION_V2: EXTRACTION_SYSTEM_PROMPT_V2,
+}
+
+
+def render_extraction_prompt(
+    cv_text: str,
+    validation_feedback: str | None = None,
+    version: str = EXTRACTION_PROMPT_VERSION,
+) -> tuple[str, str]:
+    """return (system_instruction, user_prompt) for the extraction call.
+
+    `version` selects between the extraction prompt variants; both target the same schema
+    and the same temperature, so an a/b comparison changes one thing only.
+    """
+    try:
+        system = EXTRACTION_SYSTEM_PROMPTS[version]
+    except KeyError:
+        raise ValueError(f"unknown extraction prompt version: {version!r}") from None
     user = "Extract the profile from the CV below.\n" + wrap_untrusted("cv_text", cv_text)
-    return EXTRACTION_SYSTEM_PROMPT, _with_feedback(user, validation_feedback)
+    return system, _with_feedback(user, validation_feedback)
 
 
 # ---------------------------------------------------------------- 2. recommendation prompt
