@@ -34,7 +34,7 @@ business logic.
 | **Functionality** | end-to-end pipeline, CLI, notebook, per-run artifacts, prompt-version selection | `src/pipeline.py`, `prototype.ipynb`, `outputs/runs/` |
 | **Output quality** | typed schemas, verbatim evidence on every item, explicit `unknown`, caveats per result | `src/schemas.py`, `outputs/runs/<run_id>/requirement_matching.json` |
 | **Efficiency** | one API call for extraction, a second only when a narrative is requested; per-stage timings and token usage recorded | `src/tracing.py`, `execution_trace.json` |
-| **Reliability** | structured error codes for every failure mode, retry policy, 154 tests, error paths measured 3/3 | `tests/`, `docs/evaluation.md` |
+| **Reliability** | structured error codes for every failure mode, retry policy, 162 tests, error paths measured 3/3 | `tests/`, `docs/evaluation.md` |
 | **Human oversight** | final decision unrepresentable in the schema; hire/reject language stripped; corrections recorded without overwriting output | `src/schemas.py`, `src/narrative.py`, `src/review.py` |
 | **Evaluation** | three measured evaluation scripts, hand-labelled ground truth, per-case CSV, stated limitations | `docs/evaluation.md`, `outputs/evaluation_results.csv` |
 

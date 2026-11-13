@@ -174,16 +174,20 @@ def _aggregate(rows: list[dict]) -> dict:
     }
 
 
-def compare_live(repeats: int) -> dict:
+def compare_live(repeats: int, delay: float = 0.0) -> dict:
     gt_spec = json.loads(
         (ROOT / "data/evaluation/extraction_ground_truth.json").read_text(encoding="utf-8")
     )
     texts = {gt["file"]: extract_text((ROOT / gt["file"]).read_bytes()).text for gt in gt_spec["cvs"]}
     per_version: dict[str, list[dict]] = {v: [] for v in VERSIONS}
 
+    call_index = 0
     for repeat in range(1, repeats + 1):
         for gt in gt_spec["cvs"]:
             for version in VERSIONS:
+                if call_index and delay:
+                    time.sleep(delay)
+                call_index += 1
                 start = time.perf_counter()
                 try:
                     result = extract_profile(texts[gt["file"]], mode="live", prompt_version=version)
@@ -233,6 +237,10 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["mock", "live"], default="mock")
+    parser.add_argument("--delay", type=float, default=0.0,
+                        help="seconds to pause between live calls; a free-tier quota is "
+                             "measured per minute, so firing every cv back to back is what "
+                             "triggers http 429")
     parser.add_argument("--repeats", type=int, default=1,
                         help="live only: repeat each cv/version pair N times")
     parser.add_argument("--out", type=Path, default=ROOT / "outputs/prompt_comparison.json")
@@ -244,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
         "a_construction": compare_construction(),
     }
     if args.mode == "live":
-        report["b_live_extraction_quality"] = compare_live(args.repeats)
+        report["b_live_extraction_quality"] = compare_live(args.repeats, args.delay)
     else:
         report["b_live_extraction_quality"] = {
             "skipped": True,

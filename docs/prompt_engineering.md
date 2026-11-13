@@ -123,9 +123,15 @@ These are real failures from this repository's history, not illustrations.
    shell session also outlives the problem it was meant to solve and silently wins over `.env`,
    since `load_dotenv()` does not overwrite an existing environment variable. Check `GEMINI_MODEL`
    before trusting a live result.
-2. **Transient `503 UNAVAILABLE` (high demand).** The client retries once; beyond that the run
-   fails loudly rather than returning a partial result. Retries and their reasons are now counted
-   in the execution trace, so repeated 503s are visible rather than anecdotal.
+2. **Transient `503 UNAVAILABLE` (high demand), and `429 RESOURCE_EXHAUSTED` (quota).** These
+   look alike — both are "try again" — but they are not. "High demand" clears in seconds; "you
+   exceeded your current quota" is a budget that refills on the provider's clock, and retrying
+   it quickly spends what is left. A live evaluation run hit both: one CV got a 503, the next
+   two got 429 after the first call had already consumed the per-minute allowance. The client
+   now uses a slow schedule for 429 (20 s base, capped at 90 s) and honours a `retryDelay` the
+   service supplies, while 503 keeps the fast schedule; the evaluation scripts take `--delay` to
+   space their calls instead of firing every CV back to back. Retries and their reasons are
+   counted in the execution trace, so repeated throttling is visible rather than anecdotal.
 3. **A banned phrase slipped through the narrative filter.** An early pattern matched only
    "should be hired" and let "Should we hire this candidate?" through. A test caught it; the
    hiring verbs are now banned outright rather than only in modal constructions. A false positive

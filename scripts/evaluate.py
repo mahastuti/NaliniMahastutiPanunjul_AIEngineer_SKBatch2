@@ -147,10 +147,12 @@ def eval_validation_and_grounding() -> dict:
 # ---------------------------------------------------------------- end-to-end reliability
 
 
-def eval_pipeline_reliability(mode: str) -> dict:
+def eval_pipeline_reliability(mode: str, delay: float = 0.0) -> dict:
     jd = (ROOT / "data/job_requirements/data_analyst.txt").read_text(encoding="utf-8")
     runs = []
-    for pdf in sorted((ROOT / "data/sample_cvs").glob("*.pdf")):
+    for index, pdf in enumerate(sorted((ROOT / "data/sample_cvs").glob("*.pdf"))):
+        if index and delay:
+            time.sleep(delay)
         t0 = time.perf_counter()
         try:
             result = run_screening(pdf_bytes=pdf.read_bytes(), job_description=jd,
@@ -337,6 +339,10 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["mock", "live"], default="mock")
+    parser.add_argument("--delay", type=float, default=0.0,
+                        help="seconds to pause between live calls; a free-tier quota is "
+                             "measured per minute, so firing every cv back to back is what "
+                             "triggers http 429")
     parser.add_argument("--force", action="store_true",
                         help="allow a mock run to overwrite a live report")
     parser.add_argument("--out", type=Path, default=ROOT / "outputs/evaluation_report.json")
@@ -361,7 +367,7 @@ def main(argv: list[str] | None = None) -> int:
         "eval_date_fixed": EVAL_TODAY.isoformat(),
         "matching_engine": eval_matching(),
         "validation_and_grounding": eval_validation_and_grounding(),
-        "pipeline_reliability": eval_pipeline_reliability(args.mode),
+        "pipeline_reliability": eval_pipeline_reliability(args.mode, args.delay),
         "extraction_quality": {
             "measured_elsewhere": "scripts/evaluate_prompts.py --mode live",
             "reason": "extraction quality depends on the prompt and the model; the mock profile "
