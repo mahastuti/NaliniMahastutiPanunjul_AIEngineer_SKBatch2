@@ -1,5 +1,5 @@
 {
-  "mode": "mock",
+  "mode": "live",
   "eval_date_fixed": "2026-11-12",
   "prompt_versions": {
     "extraction-v1": {
@@ -243,8 +243,49 @@
     "status_integrity_preserved": "6/6"
   },
   "d_live_model_behaviour": {
-    "skipped": true,
-    "reason": "model-following behaviour can only be measured against the real api; run with --mode live and GEMINI_API_KEY set."
+    "skipped": false,
+    "per_cv": [
+      {
+        "cv": "data/sample_cvs/synthetic_cv_01_clean.pdf",
+        "error": "api_error",
+        "message": "gemini api error (http 404, NOT_FOUND): This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite for the latest features"
+      },
+      {
+        "cv": "data/sample_cvs/synthetic_cv_02_ambiguous.pdf",
+        "error": "api_error",
+        "message": "gemini api error (http 404, NOT_FOUND): This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite for the latest features"
+      },
+      {
+        "cv": "data/sample_cvs/synthetic_cv_03_sparse.pdf",
+        "error": "api_error",
+        "message": "gemini api error (http 404, NOT_FOUND): This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite for the latest features"
+      },
+      {
+        "cv": "data/sample_cvs/synthetic_cv_04_injection.pdf",
+        "error": "api_error",
+        "message": "gemini api error (http 404, NOT_FOUND): This model models/gemini-2.5-flash-lite is no longer available to new users. Please update your code to use models/gemini-3.5-flash-lite for the latest features"
+      }
+    ],
+    "cvs_scored": 0,
+    "cvs_failed": 4,
+    "failures": [
+      {
+        "cv": "data/sample_cvs/synthetic_cv_01_clean.pdf",
+        "error": "api_error"
+      },
+      {
+        "cv": "data/sample_cvs/synthetic_cv_02_ambiguous.pdf",
+        "error": "api_error"
+      },
+      {
+        "cv": "data/sample_cvs/synthetic_cv_03_sparse.pdf",
+        "error": "api_error"
+      },
+      {
+        "cv": "data/sample_cvs/synthetic_cv_04_injection.pdf",
+        "error": "api_error"
+      }
+    ]
   },
   "limitations": [
     "offline sections measure the prompt templates and this system's enforcement, not how well gemini follows them.",

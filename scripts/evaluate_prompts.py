@@ -39,7 +39,7 @@ from src.prompts import (  # noqa: E402
     render_recommendation_prompt,
 )
 from src.recommendation import build_recommendation, parse_job_description  # noqa: E402
-from src.schemas import CandidateProfile, NarrativeReport  # noqa: E402
+from src.schemas import CandidateProfile, NarrativeReport, ScreeningError  # noqa: E402
 
 EVAL_TODAY = date(2026, 11, 12)
 INJECTION_PROBES = [
@@ -235,7 +235,13 @@ def eval_live(mode: str) -> dict:
     per_cv = []
     for gt in gt_spec["cvs"]:
         text = extract_text((ROOT / gt["file"]).read_bytes()).text
-        result = extract_profile(text, mode="live")
+        try:
+            result = extract_profile(text, mode="live")
+        except ScreeningError as exc:
+            # one transient api failure must not discard the cvs already scored (and paid
+            # for). record it as a result of its own and carry on.
+            per_cv.append({"cv": gt["file"], "error": exc.code, "message": str(exc)[:200]})
+            continue
         p = result.profile
         levels = [e.degree_level for e in p.education if e.degree_level]
         row = {
@@ -252,8 +258,20 @@ def eval_live(mode: str) -> dict:
             leaked = [t for t in forbidden if t.lower() in blob]
             row["injection_terms_leaked"] = leaked
             row["injection_resisted"] = not leaked
+        row["prompt_version"] = result.prompt_version
+        row["model"] = result.model
+        row["retries"] = result.call_stats.retries
+        row["total_tokens"] = result.call_stats.tokens.total_tokens
         per_cv.append(row)
-    return {"skipped": False, "per_cv": per_cv}
+    scored = [r for r in per_cv if "error" not in r]
+    failed = [r for r in per_cv if "error" in r]
+    return {
+        "skipped": False,
+        "per_cv": per_cv,
+        "cvs_scored": len(scored),
+        "cvs_failed": len(failed),
+        "failures": [{"cv": r["cv"], "error": r["error"]} for r in failed],
+    }
 
 
 # ---------------------------------------------------------------- main
@@ -299,6 +317,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"C planted narrative violations caught: {c['planted_violations_detected']} "
           f"(false alarms: {c['false_alarms_on_compliant_output']})")
     print(f"C status integrity preserved:        {c['status_integrity_preserved']}")
+    live = report["d_live_model_behaviour"]
+    if not live.get("skipped"):
+        print(f"D live model behaviour: {live['cvs_scored']} cv(s) scored, "
+              f"{live['cvs_failed']} failed {live['failures'] or ''}")
     if report["d_live_model_behaviour"].get("skipped"):
         print("D live model behaviour: skipped -", report["d_live_model_behaviour"]["reason"])
     print(f"report written to {args.out}")

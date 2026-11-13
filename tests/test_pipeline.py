@@ -156,3 +156,55 @@ def test_logs_contain_no_cv_text(sample_pdf, sample_jd, caplog):
         run_screening(pdf_bytes=sample_pdf, job_description=sample_jd, mode="mock")
     logged = " ".join(r.getMessage() for r in caplog.records)
     assert "Dewi" not in logged and "Contoh" not in logged and "Tableau" not in logged
+
+
+# ---------------------------------------------------------------- entry points
+
+
+@pytest.mark.parametrize(
+    "script",
+    ["scripts/evaluate.py", "scripts/evaluate_prompts.py",
+     "scripts/compare_extraction_prompts.py", "src/pipeline.py"],
+)
+def test_every_live_capable_entry_point_loads_the_env_file(script):
+    """regression: evaluate.py and evaluate_prompts.py offered --mode live but never called
+    load_dotenv(), so a correctly configured .env still produced `missing_api_key`."""
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parent.parent / script).read_text(encoding="utf-8")
+    assert "--mode" in source or "argparse" in source
+    assert "load_dotenv()" in source, f"{script} can run live but never loads .env"
+
+
+def test_evaluation_csv_handles_a_failed_pipeline_run(tmp_path):
+    """regression: a live run that raises has no `signal` key, and write_csv indexed it
+    directly -- so one failed cv crashed the whole evaluation after the api calls were
+    already paid for."""
+    import importlib.util
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    spec = importlib.util.spec_from_file_location("evaluate", root / "scripts/evaluate.py")
+    evaluate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(evaluate)
+
+    report = {
+        "matching_engine": {"cases": [], "requirement_level_accuracy": 1.0,
+                            "exact_match_cases": 0, "n_cases": 0},
+        "validation_and_grounding": {"fixtures": [], "validation_decisions_correct": "0/0",
+                                     "hallucination_containment_rate": 1.0,
+                                     "genuine_retention_rate": 1.0},
+        "pipeline_reliability": {
+            "runs": [
+                {"cv": "ok.pdf", "ok": True, "seconds": 1.0, "signal": "partial_support",
+                 "extracted_items_survived": 7, "requires_human_review": True},
+                {"cv": "broken.pdf", "ok": False, "seconds": 2.0, "error_code": "api_error"},
+            ],
+            "success_rate": "1/2", "mean_seconds": 1.5,
+            "error_paths": [], "error_paths_correct": "0/0",
+        },
+    }
+    path = evaluate.write_csv(report, tmp_path / "results.csv")
+    text = path.read_text(encoding="utf-8")
+    assert "broken.pdf,error_code,api_error" in text
+    assert "ok.pdf,signal,partial_support" in text

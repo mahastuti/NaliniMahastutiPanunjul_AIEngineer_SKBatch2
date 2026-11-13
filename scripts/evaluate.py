@@ -234,18 +234,31 @@ def write_csv(report: dict, path: Path) -> Path:
             })
 
     for run in report["pipeline_reliability"]["runs"]:
+        case = Path(run["cv"]).name
         rows.append({
-            "section": "pipeline", "case": Path(run["cv"]).name, "metric": "end_to_end_success",
+            "section": "pipeline", "case": case, "metric": "end_to_end_success",
             "value": run["ok"], "expected": True, "passed": run["ok"],
         })
         rows.append({
-            "section": "pipeline", "case": Path(run["cv"]).name, "metric": "seconds",
+            "section": "pipeline", "case": case, "metric": "seconds",
             "value": run["seconds"], "expected": "", "passed": "",
         })
-        rows.append({
-            "section": "pipeline", "case": Path(run["cv"]).name, "metric": "signal",
-            "value": run["signal"], "expected": "", "passed": "",
-        })
+        # a failed run has no signal and no survivor count: report what it does have, the
+        # error code, rather than dropping the row or inventing a value for it.
+        if run["ok"]:
+            rows.append({
+                "section": "pipeline", "case": case, "metric": "signal",
+                "value": run["signal"], "expected": "", "passed": "",
+            })
+            rows.append({
+                "section": "pipeline", "case": case, "metric": "extracted_items_survived",
+                "value": run["extracted_items_survived"], "expected": "", "passed": "",
+            })
+        else:
+            rows.append({
+                "section": "pipeline", "case": case, "metric": "error_code",
+                "value": run.get("error_code", "unknown"), "expected": "", "passed": "",
+            })
 
     for case in report["pipeline_reliability"]["error_paths"]:
         rows.append({
@@ -290,9 +303,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["mock", "live"], default="mock")
     parser.add_argument("--out", type=Path, default=ROOT / "outputs/evaluation_report.json")
+    parser.add_argument("--csv-only", action="store_true",
+                        help="rebuild the csv from an existing report without re-running "
+                             "anything (no api calls); use after a crash in the csv writer")
     parser.add_argument("--csv", type=Path, default=ROOT / "outputs/evaluation_results.csv",
                         help="per-case results, flattened from the same run")
     args = parser.parse_args(argv)
+
+    if args.csv_only:
+        report = json.loads(args.out.read_text(encoding="utf-8"))
+        csv_path = write_csv(report, args.csv)
+        print(f"rebuilt {csv_path} from {args.out} (mode: {report['mode']}, no api calls)")
+        return 0
 
     report = {
         "mode": args.mode,

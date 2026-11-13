@@ -143,11 +143,45 @@ def test_server_error_is_retried_then_succeeds():
     assert len(client.calls) == 2
 
 
-def test_server_error_persisting_raises():
-    client = FakeClient([_api_error(genai_errors.ServerError, 503)] * 2)
+def test_server_error_persisting_raises_after_the_transient_budget():
+    attempts = gemini_client.MAX_TRANSIENT_RETRIES + 1
+    client = FakeClient([_api_error(genai_errors.ServerError, 503)] * attempts)
     with pytest.raises(ExtractionError) as exc:
         extract_profile(CV, mode="live", client=client)
     assert exc.value.code == "api_error"
+    assert "http 503" in exc.value.message
+    assert len(client.calls) == attempts, "every transient retry should have been used"
+
+
+def test_transient_retries_do_not_consume_the_schema_retry():
+    """a 503 is a timing problem, not a content problem: it must not spend the one retry
+    reserved for feeding validation feedback back to the model."""
+    client = FakeClient([
+        _api_error(genai_errors.ServerError, 503),
+        _api_error(genai_errors.ServerError, 503),
+        "not json",          # first content attempt, wasted on a bad answer
+        _profile_json(),     # second content attempt, after validation feedback
+    ])
+    result = extract_profile(CV, mode="live", client=client)
+    assert result.profile.skills
+    assert len(client.calls) == 4
+    assert "rejected by schema validation" in client.calls[3]["contents"]
+
+
+def test_rate_limit_is_treated_as_transient():
+    client = FakeClient([_api_error(genai_errors.ClientError, 429), _profile_json()])
+    assert extract_profile(CV, mode="live", client=client).profile.skills
+    assert len(client.calls) == 2
+
+
+def test_backoff_grows_and_is_jittered(monkeypatch):
+    monkeypatch.setattr(gemini_client, "RETRY_DELAY_S", 2.0)
+    delays = [gemini_client.transient_backoff_seconds(n) for n in (1, 2, 3)]
+    assert 2.0 <= delays[0] < 2.5
+    assert 4.0 <= delays[1] < 5.0
+    assert 8.0 <= delays[2] < 10.0
+    repeated = {round(gemini_client.transient_backoff_seconds(1), 6) for _ in range(20)}
+    assert len(repeated) > 1, "jitter should vary the delay"
 
 
 def test_unexpected_exception_is_surfaced_not_swallowed():
