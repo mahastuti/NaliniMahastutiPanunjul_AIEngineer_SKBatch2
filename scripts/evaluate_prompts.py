@@ -21,6 +21,7 @@ usage: python scripts/evaluate_prompts.py [--mode mock|live] [--out outputs/prom
 import argparse
 import json
 import sys
+import time
 from datetime import date
 from pathlib import Path
 
@@ -226,14 +227,16 @@ def eval_recommendation_contract() -> dict:
 # ---------------------------------------------------------------- D/E. live
 
 
-def eval_live(mode: str) -> dict:
+def eval_live(mode: str, delay: float = 0.0) -> dict:
     if mode != "live":
         return {"skipped": True,
                 "reason": "model-following behaviour can only be measured against the real api; "
                           "run with --mode live and GEMINI_API_KEY set."}
     gt_spec = json.loads((ROOT / "data/evaluation/extraction_ground_truth.json").read_text(encoding="utf-8"))
     per_cv = []
-    for gt in gt_spec["cvs"]:
+    for index, gt in enumerate(gt_spec["cvs"]):
+        if index and delay:
+            time.sleep(delay)
         text = extract_text((ROOT / gt["file"]).read_bytes()).text
         try:
             result = extract_profile(text, mode="live")
@@ -311,6 +314,10 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["mock", "live"], default="mock")
+    parser.add_argument("--delay", type=float, default=0.0,
+                        help="seconds to pause between live calls; a free-tier quota is "
+                             "measured per minute, so firing every cv back to back is what "
+                             "triggers http 429")
     parser.add_argument("--force", action="store_true",
                         help="allow a mock run to overwrite a live report")
     parser.add_argument("--out", type=Path, default=ROOT / "outputs/prompt_evaluation.json")
@@ -328,7 +335,7 @@ def main(argv: list[str] | None = None) -> int:
         "a_prompt_construction": eval_prompt_construction(),
         "b_extraction_contract": eval_extraction_contract(),
         "c_recommendation_contract": eval_recommendation_contract(),
-        "d_live_model_behaviour": eval_live(args.mode),
+        "d_live_model_behaviour": eval_live(args.mode, args.delay),
         "limitations": [
             "offline sections measure the prompt templates and this system's enforcement, not how well gemini follows them.",
             "simulated outputs are hand-written representative failures, not a sample of real model errors.",

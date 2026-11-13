@@ -8,7 +8,7 @@ rule enforcement, live extraction accuracy) is in `docs/prompt_engineering.md` a
 | script | writes |
 |---|---|
 | `python scripts/evaluate.py [--mode mock\|live]` | `outputs/evaluation_report.json`, `outputs/evaluation_results.csv` |
-| `python scripts/evaluate_prompts.py [--mode mock\|live]` | `outputs/prompt_evaluation.json` |
+| `python scripts/evaluate_prompts.py [--mode mock\|live] [--delay N]` | `outputs/prompt_evaluation.json` |
 | `python scripts/compare_extraction_prompts.py [--mode mock\|live]` | `outputs/prompt_comparison.json` |
 
 The evaluation date is fixed (2026-11-12) so duration-based results are reproducible.
@@ -119,8 +119,14 @@ reported as measured rather than retried away: a transient-dependency failure ra
 property of a system that calls a hosted model, and the retry policy
 (`MAX_TRANSIENT_RETRIES = 3`, exponential backoff) had already been exhausted.
 
-**Live extraction accuracy: attempted, not obtained — because of a misconfiguration, not the
-model.** `evaluate_prompts.py --mode live` was run and all four CVs returned `api_error`
+**Live extraction accuracy: partially obtained on the second attempt.** A later run, with
+`GEMINI_MODEL` unset, scored **1 of 4 CVs**; the other three failed with one `503 UNAVAILABLE`
+and two `429 RESOURCE_EXHAUSTED`. The 429s are a free-tier quota measured per minute, which the
+script was exhausting by calling four times in a row — hence `--delay`, and the separate, much
+slower backoff schedule now used for 429. The figures from that one CV are real but are a sample
+of one, so no accuracy claim is made from them yet.
+
+**First attempt: a misconfiguration, not the model.** `evaluate_prompts.py --mode live` was run and all four CVs returned `api_error`
 (`cvs_scored: 0`, `cvs_failed: 4` in `outputs/prompt_evaluation.json`). The recorded message
 identifies the cause exactly: HTTP 404, `models/gemini-2.5-flash-lite is no longer available to
 new users`. A `GEMINI_MODEL` override left over from working around an earlier 503 pointed at a
@@ -142,7 +148,7 @@ injection probes under an identical configuration (same schema, temperature and 
 variables); `extraction-v2`'s system prompt is 986 characters larger. No quality claim is made
 offline.
 
-**Tests** — 154 pytest tests pass, all LLM calls mocked.
+**Tests** — 162 pytest tests pass, all LLM calls mocked.
 
 ## API usage and execution time
 

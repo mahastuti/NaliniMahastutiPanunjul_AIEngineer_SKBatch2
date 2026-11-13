@@ -62,7 +62,7 @@ Python 3.11+, PyMuPDF, Google Gemini API via `google-genai`, Pydantic v2, pytest
 │   └── evaluation/            # hand-labeled ground truth + fixtures
 ├── outputs/                   # generated results, evaluation reports, per-run artifacts
 │   └── runs/<run_id>/         # candidate_extraction / requirement_matching / screening_report / execution_trace
-├── tests/                     # 154 pytest tests
+├── tests/                     # 162 pytest tests
 ├── scripts/
 │   ├── make_sample_cv.py              # regenerate synthetic cvs
 │   ├── evaluate.py                    # system-level measured evaluation (+ csv)
@@ -151,7 +151,7 @@ Corrections are typed (`incorrect_extraction`, `unsupported_qualification`, `unv
 pytest
 ```
 
-154 tests: PDF edge cases (valid/empty/scanned/corrupt/encrypted), schema validation (types, dates, forbidden extra fields, undecidable-decision schema), prompt rendering, prompt-version selection and injection containment, matching rules (met/not_met/unknown, must-have vs nice-to-have, date arithmetic), narrative verification (status tampering, fabricated evidence, scores, hire/reject language, `unknown` misreported as a gap), execution tracing (stage order, failure recording, retry and token accounting), run artifacts (four files, per-run isolation, no CV text in traces), reviewer corrections (path validation, scope rules, immutability of the AI output), pipeline end-to-end, API-failure and invalid-response handling with a fake client, human-review fallback, no-persistence and no-CV-in-logs checks. LLM calls in tests are mocked.
+162 tests: PDF edge cases (valid/empty/scanned/corrupt/encrypted), schema validation (types, dates, forbidden extra fields, undecidable-decision schema), prompt rendering, prompt-version selection and injection containment, matching rules (met/not_met/unknown, must-have vs nice-to-have, date arithmetic), narrative verification (status tampering, fabricated evidence, scores, hire/reject language, `unknown` misreported as a gap), execution tracing (stage order, failure recording, retry and token accounting), run artifacts (four files, per-run isolation, no CV text in traces), reviewer corrections (path validation, scope rules, immutability of the AI output), pipeline end-to-end, API-failure and invalid-response handling with a fake client, human-review fallback, no-persistence and no-CV-in-logs checks. LLM calls in tests are mocked.
 
 ## 13. Evaluation Results
 

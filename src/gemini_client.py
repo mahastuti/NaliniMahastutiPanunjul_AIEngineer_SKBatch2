@@ -34,6 +34,12 @@ MAX_ATTEMPTS = 2
 # backoff with jitter (~1.5s, 3s, 6s), and these do NOT consume a content attempt.
 MAX_TRANSIENT_RETRIES = 3
 RETRY_DELAY_S = 1.5
+# a 429 is not a 503 wearing a different number. "high demand" clears in seconds, but
+# "you exceeded your current quota" is a budget that refills on the provider's clock, and
+# hammering it makes the refill later rather than sooner. so rate limiting waits far longer,
+# and when the service states its own retry delay we use that instead of guessing.
+RATE_LIMIT_DELAY_S = 20.0
+MAX_RATE_LIMIT_DELAY_S = 90.0
 
 T = TypeVar("T", bound=BaseModel)
 # render(validation_feedback) -> (system_instruction, user_prompt)
@@ -131,10 +137,36 @@ def summarize_validation_error(exc: ValidationError) -> str:
     return "; ".join(parts)
 
 
-def transient_backoff_seconds(retry_number: int) -> float:
+def server_requested_delay(exc: Exception) -> float | None:
+    """the retry delay the service asked for, if it sent one.
+
+    google's quota errors carry a RetryInfo entry such as {"retryDelay": "27s"}. honouring it
+    beats any constant we could pick, because only the service knows when the budget refills.
+    """
+    details = getattr(exc, "details", None)
+    if not isinstance(details, dict):
+        return None
+    entries = details.get("error", {}).get("details") if "error" in details else details.get("details")
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+        raw = entry.get("retryDelay") or entry.get("retry_delay")
+        if isinstance(raw, str) and raw.endswith("s"):
+            try:
+                return min(float(raw[:-1]), MAX_RATE_LIMIT_DELAY_S)
+            except ValueError:
+                return None
+    return None
+
+
+def transient_backoff_seconds(retry_number: int, *, rate_limited: bool = False) -> float:
     """exponential backoff with jitter. jitter matters when several screenings retry at
-    once: without it they all come back to a struggling endpoint at the same moment."""
-    base = RETRY_DELAY_S * (2 ** (retry_number - 1))
+    once: without it they all come back to a struggling endpoint at the same moment.
+
+    `rate_limited` selects the slower schedule used for 429 responses.
+    """
+    base_delay = RATE_LIMIT_DELAY_S if rate_limited else RETRY_DELAY_S
+    base = min(base_delay * (2 ** (retry_number - 1)), MAX_RATE_LIMIT_DELAY_S)
     return base + random.uniform(0, base * 0.25)
 
 
@@ -185,12 +217,15 @@ def generate_structured(
                     model=model, contents=user, config=config
                 )
             except genai_errors.APIError as exc:
-                retryable = exc.code == 429 or (isinstance(exc.code, int) and exc.code >= 500)
+                rate_limited = exc.code == 429
+                retryable = rate_limited or (isinstance(exc.code, int) and exc.code >= 500)
                 last_error = error_cls("api_error", _describe_api_error(exc))
                 last_error.__cause__ = exc
                 if retryable and transient < MAX_TRANSIENT_RETRIES:
                     transient += 1
-                    delay = transient_backoff_seconds(transient)
+                    delay = server_requested_delay(exc) or transient_backoff_seconds(
+                        transient, rate_limited=rate_limited
+                    )
                     if stats is not None:
                         stats.retry_reasons.append(f"api_error_http_{exc.code}")
                     logger.warning(

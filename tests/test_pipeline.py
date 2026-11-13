@@ -235,3 +235,28 @@ def test_a_mock_run_refuses_to_overwrite_a_live_report(script, tmp_path, capsys)
     out.write_text(json.dumps({"mode": "mock"}), encoding="utf-8")
     assert module.refuse_to_clobber_live(out, "mock", force=False) is False
     assert module.refuse_to_clobber_live(tmp_path / "absent.json", "mock", force=False) is False
+
+
+def test_live_evaluation_paces_its_calls(monkeypatch, tmp_path):
+    """a free-tier quota is measured per minute, so the four live calls must be spaceable.
+    regression: firing them back to back produced 429 RESOURCE_EXHAUSTED after the first CV."""
+    import importlib.util
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    spec = importlib.util.spec_from_file_location("evalprompts", root / "scripts/evaluate_prompts.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    from src.llm_extractor import extract_profile as real_extract
+
+    slept: list[float] = []
+    monkeypatch.setattr(module.time, "sleep", lambda s: slept.append(s))
+    monkeypatch.setattr(module, "extract_profile", lambda text, **kw: real_extract(text, mode="mock"))
+
+    module.eval_live("live", delay=7.5)
+    assert slept == [7.5, 7.5, 7.5], "one pause between consecutive cvs, none before the first"
+
+    slept.clear()
+    module.eval_live("live", delay=0)
+    assert slept == [], "no pacing requested, no pauses"

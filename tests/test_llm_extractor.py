@@ -38,7 +38,10 @@ def _profile_json(**over):
 
 @pytest.fixture(autouse=True)
 def no_sleep(monkeypatch):
+    """zero every backoff constant: a test that really waits out a rate-limit delay turns a
+    one-second suite into a half-minute one, and nobody runs a suite that slow."""
     monkeypatch.setattr(gemini_client, "RETRY_DELAY_S", 0)
+    monkeypatch.setattr(gemini_client, "RATE_LIMIT_DELAY_S", 0)
 
 
 def test_mock_mode_is_labelled(sample_pdf):
@@ -172,6 +175,37 @@ def test_rate_limit_is_treated_as_transient():
     client = FakeClient([_api_error(genai_errors.ClientError, 429), _profile_json()])
     assert extract_profile(CV, mode="live", client=client).profile.skills
     assert len(client.calls) == 2
+
+
+def test_rate_limited_backoff_is_far_slower_than_server_busy_backoff(monkeypatch):
+    """429 means a quota that refills on the provider's clock; retrying it on the 503
+    schedule just burns the budget faster."""
+    monkeypatch.setattr(gemini_client, "RETRY_DELAY_S", 1.5)
+    monkeypatch.setattr(gemini_client, "RATE_LIMIT_DELAY_S", 20.0)
+    busy = gemini_client.transient_backoff_seconds(1)
+    limited = gemini_client.transient_backoff_seconds(1, rate_limited=True)
+    assert limited > busy * 5
+    assert gemini_client.transient_backoff_seconds(3, rate_limited=True) <= (
+        gemini_client.MAX_RATE_LIMIT_DELAY_S * 1.25
+    )
+
+
+@pytest.mark.parametrize(
+    "details,expected",
+    [
+        ({"error": {"details": [{"@type": "RetryInfo", "retryDelay": "27s"}]}}, 27.0),
+        ({"details": [{"retry_delay": "5s"}]}, 5.0),
+        ({"error": {"details": [{"@type": "RetryInfo", "retryDelay": "9999s"}]}}, 90.0),
+        ({"error": {"details": [{"@type": "Help"}]}}, None),
+        ({"error": {"details": [{"retryDelay": "soon"}]}}, None),
+        (None, None),
+    ],
+)
+def test_server_requested_delay_is_honoured_when_present(details, expected):
+    """when the service states when to come back, that beats any constant we could pick."""
+    exc = genai_errors.ClientError(429, {"error": {"message": "quota", "status": "RESOURCE_EXHAUSTED"}})
+    exc.details = details
+    assert gemini_client.server_requested_delay(exc) == expected
 
 
 def test_backoff_grows_and_is_jittered(monkeypatch):
