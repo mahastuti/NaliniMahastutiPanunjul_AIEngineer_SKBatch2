@@ -162,8 +162,11 @@ def eval_pipeline_reliability(mode: str) -> dict:
                 "requires_human_review": result.recommendation.requires_human_review,
             })
         except ScreeningError as exc:
+            # keep the service's own message: a bare "api_error" cannot distinguish a
+            # transient 503 from a retired model name, and that difference decides whether
+            # rerunning helps or the configuration has to change.
             runs.append({"cv": pdf.name, "ok": False, "seconds": round(time.perf_counter() - t0, 3),
-                         "error_code": exc.code})
+                         "error_code": exc.code, "error_message": str(exc)[:200]})
 
     # structured-error paths must fail with a code, not crash or fabricate
     error_paths = []
@@ -259,6 +262,11 @@ def write_csv(report: dict, path: Path) -> Path:
                 "section": "pipeline", "case": case, "metric": "error_code",
                 "value": run.get("error_code", "unknown"), "expected": "", "passed": "",
             })
+            if run.get("error_message"):
+                rows.append({
+                    "section": "pipeline", "case": case, "metric": "error_message",
+                    "value": run["error_message"], "expected": "", "passed": "",
+                })
 
     for case in report["pipeline_reliability"]["error_paths"]:
         rows.append({
